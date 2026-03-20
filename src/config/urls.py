@@ -2,6 +2,9 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework_nested import routers
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
 
 from accounts import urls as accounts_urls
 from characteristics.views import (
@@ -27,7 +30,6 @@ def register_supported_entities_endpoints(router):
     router.register(
         'supported-characteristics', SupportedCharacteristicModelViewSet
     )
-
     router.register(
         'entity-relationship-tree',
         SupportedEntitiesRelationshipTreeViewSet,
@@ -54,6 +56,16 @@ prod_router = ProductRouter(org_router.nested_router)
 repo_router = RepoRouter(prod_router.nested_router)
 
 
+schema_view = get_schema_view(
+    openapi.Info(
+        title="MeasureSoftGram API",
+        default_version='v1',
+        description="Swagger dos endpoints da API do measuresoftgram"
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include(main_router.urls)),
@@ -61,6 +73,7 @@ urlpatterns = [
     path('api/v1/', include(prod_router.nested_router.urls)),
     path('api/v1/', include(repo_router.nested_router.urls)),
     path('api/v1/', include(accounts_urls.urlpatterns)),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]
 
 

@@ -2,6 +2,7 @@ from rest_framework import mixins, permissions, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from drf_yasg.utils import swagger_auto_schema
 
 from organizations.models import Organization, Product, Repository
 from organizations.serializers import (

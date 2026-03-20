@@ -200,17 +200,17 @@ class ProductSerializer(serializers.ModelSerializer):
             obj, 'create-goal-list'
         )
 
-        current_pre_config_url = self.reverse_product_resource(
-            obj, 'current-pre-config-list'
+        current_release_config_url = self.reverse_product_resource(
+            obj, 'current-release-config-list'
         )
 
         create_a_pre_config_url = self.reverse_product_resource(
-            obj, 'create-pre-config-list'
+            obj, 'create-release-config-list'
         )
 
         pre_config_entity_relationship_tree_url = (
             self.reverse_product_resource(
-                obj, 'pre-config-entity-relationship-tree-list'
+                obj, 'release-config-entity-relationship-tree-list'
             )
         )
 
@@ -230,12 +230,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'create a new repository': create_a_new_repository_url,
             'get current goal': current_goal_url,
             'get compare all goals': compare_goals_url,
-            'get current pre-config': current_pre_config_url,
-            'get pre-config entity relationship tree': pre_config_entity_relationship_tree_url,
+            'get current release-config': current_release_config_url,
+            'get release-config entity relationship tree': pre_config_entity_relationship_tree_url,
             'get all repositories latest tsqmis': repositories_latest_tsqmis_url,
             'get all repositories tsqmi historical values': repositories_tsqmi_historical_values_url,
             'create a new goal': create_a_new_goal_url,
-            'create a new pre-config': create_a_pre_config_url,
+            'create a new release-config': create_a_pre_config_url,
         }
 
 
@@ -258,6 +258,7 @@ class RepositorySerializer(serializers.HyperlinkedModelSerializer):
             'historical_values',
             'actions',
             'platform',
+            'imported'
         )
         extra_kwargs = {
             'key': {'read_only': True},
@@ -342,51 +343,14 @@ class RepositorySerializer(serializers.HyperlinkedModelSerializer):
         )
 
     def get_actions(self, obj):
-        """
-        Lista todas as ações que podem ser feitas no repositório
-        """
-        collect_metric_url = self.reverse_repository_resource(
-            obj, 'collectedmetric-list'
-        )
+        # Lista todas as ações que podem ser feitas no repositório
 
-        calculate_measures_url = self.reverse_repository_resource(
-            obj,
-            'calculate-measures-list',
-        )
-
-        calculate_subcharacteristics_url = self.reverse_repository_resource(
-            obj,
-            'calculate-subcharacteristics-list',
-        )
-
-        calculate_characteristics_url = self.reverse_repository_resource(
-            obj,
-            'calculate-characteristics-list',
-        )
-
-        calculate_tsqmi_url = self.reverse_repository_resource(
-            obj,
-            'calculate-tsqmi-list',
-        )
-
-        github_collector_url = self.reverse_repository_resource(
-            obj,
-            'github-collector-list',
-        )
-
-        sonarqube_collector_url = self.reverse_repository_resource(
-            obj,
-            'sonarqube-collector-list',
+        calculate_math_model_url = self.reverse_repository_resource(
+            obj, 'math-model-list'
         )
 
         return {
-            'collect metric': collect_metric_url,
-            'calculate measures': calculate_measures_url,
-            'calculate subcharacteristics': calculate_subcharacteristics_url,
-            'calculate characteristics': calculate_characteristics_url,
-            'calculate tsqmi': calculate_tsqmi_url,
-            'import metrics from github': github_collector_url,
-            'import metrics from SonarQube JSON': sonarqube_collector_url,
+            'calculate-math-model': calculate_math_model_url,
         }
 
     def get_historical_values(self, obj: Repository):

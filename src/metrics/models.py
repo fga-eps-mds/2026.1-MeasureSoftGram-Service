@@ -2,6 +2,7 @@ from typing import Set, Union
 
 from django.db import models
 from django.utils import timezone
+from datetime import timedelta
 
 
 class SupportedMetric(models.Model):
@@ -58,12 +59,26 @@ class SupportedMetric(models.Model):
             'duplicated_lines_density',
         }
 
+        github_values = [
+            'total_issues',
+            'resolved_issues',
+            'sum_ci_feedback_times',
+            'total_builds',
+        ]
+
         uts_values: Set[str] = {'test_execution_time', 'tests'}
 
         if self.key in listed_values:
             return self.get_latest_metric_values(repository, qualifier='FIL')
         elif self.key in uts_values:
             return self.get_latest_metric_values(repository, qualifier='UTS')
+        elif self.key in github_values:
+            latest_metric = self.collected_metrics.filter(
+                repository=repository,
+                qualifier='FIL',
+            ).first()
+            if latest_metric:
+                return latest_metric.value
         elif self.key not in listed_values.union(uts_values):
             latest_metric = self.collected_metrics.filter(
                 repository=repository,
@@ -95,10 +110,8 @@ class SupportedMetric(models.Model):
             same_day = latest_metric.created_at
 
             # Remove hours, minutes and seconds
-            begin = same_day.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = same_day.replace(
-                hour=23, minute=59, second=59, microsecond=0
-            )
+            begin = same_day - timedelta(minutes=20)
+            end = same_day
 
             # Métrica de arquivos (inclusive de arquivos vazios)
             metrics_qs = self.collected_metrics.filter(
@@ -187,9 +200,3 @@ class CollectedMetric(models.Model):
         related_name='collected_metrics',
         on_delete=models.CASCADE,
     )
-
-    # def __str__(self):
-    #     return (
-    #         f'Metric: {self.metric}, Value: {self.value}, '
-    #         f'Created at: {self.created_at}'
-    #     )

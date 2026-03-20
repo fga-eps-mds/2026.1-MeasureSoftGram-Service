@@ -231,12 +231,12 @@ class ProductsViewsSetCase(APITestCaseExpanded):
             'create a new repository',
             'get current goal',
             'get compare all goals',
-            'get current pre-config',
-            'get pre-config entity relationship tree',
+            'get current release-config',
+            'get release-config entity relationship tree',
             'get all repositories latest tsqmis',
             'get all repositories tsqmi historical values',
             'create a new goal',
-            'create a new pre-config',
+            'create a new release-config',
         ]
 
         for action_name in expected_actions:
@@ -256,7 +256,7 @@ class ProductsViewsSetCase(APITestCaseExpanded):
 
     def test_if_get_current_pre_config_url_is_working(self):
         actions, product = self.get_product_actions()
-        action_url = actions['get current pre-config']
+        action_url = actions['get current release-config']
         response = self.client.get(action_url)
         self.assertEqual(response.status_code, 200)
 
@@ -298,7 +298,7 @@ class ProductsViewsSetCase(APITestCaseExpanded):
 
     def test_if_create_new_pre_config_action_url_is_working(self):
         actions, product = self.get_product_actions()
-        action_url = actions['create a new pre-config']
+        action_url = actions['create a new release-config']
         measures = [{'key': 'passed_tests', 'weight': 100}]
         subcharacteristics = [
             {'key': 'testing_status', 'weight': 100, 'measures': measures}
@@ -311,7 +311,7 @@ class ProductsViewsSetCase(APITestCaseExpanded):
             }
         ]
         data = {
-            'name': 'Test Pre-Config',
+            'name': 'Test release-config',
             'data': {'characteristics': characteristics},
         }
         response = self.client.post(action_url, data, format='json')
@@ -336,7 +336,7 @@ class ProductsViewsSetCase(APITestCaseExpanded):
     def test_if_get_pre_config_entity_relationship_tree_url_is_working(self):
         actions, product = self.get_product_actions()
         pre_config_entity_relationship_tree_url = actions[
-            'get pre-config entity relationship tree'
+            'get release-config entity relationship tree'
         ]
         response = self.client.get(pre_config_entity_relationship_tree_url)
         self.assertEqual(response.status_code, 200)

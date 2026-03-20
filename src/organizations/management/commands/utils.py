@@ -6,12 +6,12 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 
 from characteristics.models import BalanceMatrix, SupportedCharacteristic
-from pre_configs.models import PreConfig
+from release_configuration.models import ReleaseConfiguration
 from subcharacteristics.models import SupportedSubCharacteristic
 from utils import exceptions, staticfiles
 
 
-def create_suported_characteristics(suported_characteristics):
+def create_supported_characteristics(suported_characteristics):
     for characteristic in suported_characteristics:
         with contextlib.suppress(IntegrityError):
             klass = SupportedCharacteristic
@@ -107,7 +107,7 @@ def get_subcharacteristics(characteristic: SupportedCharacteristic):
     return data
 
 
-def create_a_preconfig(characteristics_keys, product):
+def create_a_releaseconfig(characteristics_keys, product):
     """
     Função que gera uma pré-configuração com pesos divididos
     igualmente com base nas características passadas no parâmetro.
@@ -132,15 +132,15 @@ def create_a_preconfig(characteristics_keys, product):
         )
 
     data = force_the_sum_to_equal_100(data)
-    preconfig = {'characteristics': data}
+    release_config = {'characteristics': data}
 
-    preconfig = PreConfig.objects.create(
-        name='custom pre-config',
-        data=preconfig,
+    release_config = ReleaseConfiguration.objects.create(
+        name='custom release-config',
+        data=release_config,
         product=product,
     )
 
-    return preconfig
+    return release_config
 
 
 def get_random_start_at():
@@ -163,7 +163,7 @@ def get_random_changes(characteristics_keys):
     return changes
 
 
-def get_random_goal_data(pre_config: PreConfig):
+def get_random_goal_data(pre_config: ReleaseConfiguration):
     """
     Função que gera um objetivo aleatório com base na pré-configuração passada
     no parâmetro.

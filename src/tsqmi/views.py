@@ -12,7 +12,7 @@ from tsqmi.serializers import (
     TSQMICalculationRequestSerializer,
     TSQMISerializer,
 )
-from utils.exceptions import CharacteristicNotDefinedInPreConfiguration
+from utils.exceptions import CharacteristicNotDefinedInReleaseConfigurationuration
 from django.http import HttpResponse
 
 
@@ -106,84 +106,3 @@ class CalculatedTSQMIHistoryModelViewSet(
             product__organization_id=self.kwargs['organization_pk'],
         )
         return repository.calculated_tsqmis.all().reverse()
-
-
-class CalculateTSQMI(
-    mixins.CreateModelMixin,
-    viewsets.GenericViewSet,
-):
-    serializer_class = TSQMISerializer
-
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
-
-    def get_product(self):
-        return get_object_or_404(
-            Product,
-            id=self.kwargs['product_pk'],
-            organization_id=self.kwargs['organization_pk'],
-        )
-
-    def create(self, request, *args, **kwargs):
-        serializer = TSQMICalculationRequestSerializer(
-            data=request.data,
-            context={'request': request},
-        )
-        serializer.is_valid(raise_exception=True)
-        created_at = serializer.validated_data['created_at']
-
-        repository: Repository = self.get_repository()
-        pre_config = repository.product.pre_configs.first()
-
-        product = self.get_product()
-        pre_config = product.pre_configs.first()
-
-        # 2. Get queryset
-        # TODO: Gambiarra, modelar model para nível acima
-        characteristics_keys = [
-            characteristic['key']
-            for characteristic in pre_config.data['characteristics']
-        ]
-        qs = (
-            SupportedCharacteristic.objects.filter(
-                key__in=characteristics_keys
-            )
-            .prefetch_related('calculated_characteristics')
-            .first()
-        )
-
-        chars_params = []
-        try:
-            chars_params = qs.get_latest_characteristics_params(
-                pre_config,
-            )
-        except CharacteristicNotDefinedInPreConfiguration as exc:
-            return Response(
-                {'error': str(exc)},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
-
-        core_params = {
-            'tsqmi': {
-                'key': 'tsqmi',
-                'characteristics': chars_params,
-            }
-        }
-
-        calculate_result = calculate_tsqmi(core_params)
-
-        data = calculate_result.get('tsqmi')[0]
-
-        tsqmi = TSQMI.objects.create(
-            repository=repository,
-            value=data['value'],
-            created_at=created_at,
-        )
-
-        serializer = TSQMISerializer(tsqmi)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)

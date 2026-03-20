@@ -141,3 +141,5 @@ dmypy.json
 cython_debug/
 
 junit.xml
+
+env-vars

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from characteristics.models import CalculatedCharacteristic
 from goals.models import Equalizer, Goal
-from pre_configs.models import PreConfig
+from release_configuration.models import ReleaseConfiguration
 from accounts.models import CustomUser
 
 
@@ -95,11 +95,11 @@ class GoalSerializer(serializers.ModelSerializer):
         pré-configuração vigente.
 
         TODO: Essa função terá que mudar quando o sistema tiver mais de um
-        repositório, pois será necessário fazer um fitro na tabela PreConfig
+        repositório, pois será necessário fazer um fitro na tabela ReleaseConfiguration
         pelo id do repositório.
         """
         product = self.get_product()
-        pre_config = product.pre_configs.first()
+        pre_config = product.release_configuration.first()
         return pre_config.get_characteristics_keys()
 
     def all_characteristics_are_defined_in_the_pre_config(self) -> bool:
@@ -131,7 +131,7 @@ class GoalSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 (
                     'It is not allowed to create goals with characteristics '
-                    'that were not selected in the pre-configuration.'
+                    'that were not selected in the release-configuration.'
                 )
             )
 

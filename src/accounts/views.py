@@ -1,4 +1,5 @@
 from django.conf import settings
+import requests
 
 from rest_framework import mixins, viewsets, status
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ from accounts.serializers import (
     AccountsCreateSerializer,
     AccountsLoginSerializer,
     AccountsRetrieveSerializer,
+    GitHubAccessTokenRetrieveSerializer,
     UserListSerializer,
 )
 
@@ -105,3 +107,30 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = CustomUser.objects.all()
     serializer_class = UserListSerializer
+
+
+class UserRepos(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet para os repositórios do github do user a partir de seu code
+    """
+    permission_classes = (IsAuthenticated,)
+
+    serializer_class = GitHubAccessTokenRetrieveSerializer
+
+    def retrieve(self, request):
+        code = request.query_params.get('code')
+
+        headers = {'Accept': 'application/json'}
+
+        urlToken = f'https://github.com/login/oauth/access_token?code={code}'
+        urlTokenOtherPart = f'&client_id={settings.GITHUB_CLIENT_ID}&client_secret={settings.GITHUB_SECRET}'
+        response = requests.get(urlToken + urlTokenOtherPart, headers=headers)
+        headersUser = {'Authorization': f'Bearer {response.json()["access_token"]}'}
+
+        urlUser = 'https://api.github.com/user'
+        responseUser = requests.get(urlUser, headers=headersUser)
+
+        urlRepos = f'https://api.github.com/search/repositories?q=user:{responseUser.json()["login"]}'
+        responseRepos = requests.get(urlRepos)
+
+        return Response(responseRepos.json(), status=status.HTTP_200_OK)

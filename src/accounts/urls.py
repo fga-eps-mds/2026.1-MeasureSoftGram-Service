@@ -8,6 +8,7 @@ from accounts.views import (
     RetrieveAPIAcessTokenViewSet,
     RetrieveAccountViewSet,
     UserListViewSet,
+    UserRepos
 )
 
 urlpatterns = [
@@ -49,6 +50,11 @@ urlpatterns = [
                     r'^users/$',
                     UserListViewSet.as_view({'get': 'list'}),
                     name='user-list',
+                ),
+                re_path(
+                    r'^user-repos/$',
+                    UserRepos.as_view({'get': 'retrieve'}),
+                    name='user-repos',
                 ),
             ]
         ),

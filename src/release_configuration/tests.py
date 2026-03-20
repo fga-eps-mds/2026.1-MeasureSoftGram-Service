@@ -3,7 +3,7 @@ from rest_framework.mixins import status
 from rest_framework.test import APIClient
 from rest_framework.viewsets import reverse
 
-from pre_configs.models import PreConfig
+from release_configuration.models import ReleaseConfiguration
 from utils.tests import APITestCaseExpanded
 
 # Create your tests here.
@@ -45,10 +45,10 @@ class TestConfigEnpoints(APITestCaseExpanded):
         self.assertIsNotNone(pre_config_uri)
 
         configs_resp = self.request.get(
-            pre_config_uri['get current pre-config']
+            pre_config_uri['get current release-config']
         )
 
-        self.assertEquals(configs_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(configs_resp.status_code, status.HTTP_200_OK)
         self.assertFalse(configs_resp.json()['created_config'])
 
     def test_user_created_configs(self):
@@ -77,17 +77,17 @@ class TestConfigEnpoints(APITestCaseExpanded):
         ]
 
         data = {
-            'name': 'Test Pre-Config',
+            'name': 'Test release-config',
             'data': {'characteristics': characteristics},
         }
         response = self.request.post(
-            pre_config_uri['create a new pre-config'], data, format='json'
+            pre_config_uri['create a new release-config'], data, format='json'
         )
 
-        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         configs_resp = self.request.get(
-            pre_config_uri['get current pre-config']
+            pre_config_uri['get current release-config']
         )
         print(configs_resp.json())
 
@@ -98,9 +98,9 @@ class TestConfigEnpoints(APITestCaseExpanded):
                     configs_resp.json().items(),
                 )
             ),
-            PreConfig.objects.values('id').filter(
+            ReleaseConfiguration.objects.values('id').filter(
                 id=configs_resp.json()['id']
             ),
         )
-        self.assertEquals(configs_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(configs_resp.status_code, status.HTTP_200_OK)
         self.assertTrue(configs_resp.json()['created_config'])

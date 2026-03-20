@@ -18,11 +18,9 @@ class APITestCaseExpanded(APITestCase):
         command = LoadInitialDataCommand()
         command.create_supported_metrics()
         command.create_suported_measures()
-        command.create_suported_subcharacteristics()
-        command.create_suported_characteristics()
-
-        # from django.core.management import call_command
-        # call_command("load_initial_data")
+        command.create_github_suported_measures()
+        command.create_supported_subcharacteristics()
+        command.create_supported_characteristics()
 
     def get_organization(
         self,
@@ -61,7 +59,6 @@ class APITestCaseExpanded(APITestCase):
             'changes': [
                 {'characteristic_key': 'reliability', 'delta': 1},
                 {'characteristic_key': 'maintainability', 'delta': 1},
-                # {"characteristic_key": "functional_suitability", "delta": 1},
             ],
         }
 

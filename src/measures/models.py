@@ -107,9 +107,3 @@ class CalculatedMeasure(models.Model):
         related_name='calculated_measures',
         on_delete=models.CASCADE,
     )
-
-    # def __str__(self) -> str:
-    #     return (
-    #         f'Measure: {self.measure}, Value: {self.value}, '
-    #         f'Created at: {self.created_at}'
-    #     )

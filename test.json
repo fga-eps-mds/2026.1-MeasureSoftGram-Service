@@ -1,0 +1,31 @@
+{
+    "sonarqube": 
+    {
+    "paging": { "pageIndex": 1, "pageSize": 500, "total": 262
+    },
+    "baseComponent": {
+      "id": "AZD5KQ-U3vBY_Vmy0OqS",
+      "key": "AdneMoretti_teste-eps",
+      "name": "teste-eps",
+      "qualifier": "TRK",
+      "measures": []
+    },
+    "components": [
+        {
+        "id": "AZD5Kc2tlGZFlaUzJuHX",
+        "key": "AdneMoretti_teste-eps:server/node_modules/@esbuild/linux-x64",
+        "name": "@esbuild/linux-x64",
+        "qualifier": "DIR",
+        "path": "server/node_modules/@esbuild/linux-x64",
+        "measures": []
+        }
+
+    ]
+}, 
+    "github": {
+        "metrics": [
+            {"name": "total_issues"}, 
+            {"name": "closed_issues"}
+        ]
+    }
+}

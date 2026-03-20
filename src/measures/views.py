@@ -38,88 +38,15 @@ class CalculateMeasuresViewSet(
             id=self.kwargs['product_pk'],
             organization_id=self.kwargs['organization_pk'],
         )
+        # TO DO: VER ISSO PRO RETONRO DO MATH MODEL
+        # # 7. Retornando o resultado
+        # serializer = LatestMeasuresCalculationsRequestSerializer(
+        #     qs,
+        #     many=True,
+        #     context=self.get_serializer_context(),
+        # )
 
-    def create(self, request, *args, **kwargs):
-        """
-        Calculate measures.
-        """
-        # 1. Valida se os dados foram enviados corretamente
-        serializer = MeasuresCalculationsRequestSerializer(
-            data=request.data,
-            context={'request': request},
-        )
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-        created_at = data['created_at']
-
-        # 2. Obtenção das medidas suportadas pelo serviço
-        measure_keys = [measure['key'] for measure in data['measures']]
-        qs = SupportedMeasure.objects.filter(
-            key__in=measure_keys
-        ).prefetch_related(
-            'metrics',
-            'metrics__collected_metrics',
-        )
-
-        # 3. Criação do dicionário que será enviado para o serviço `core`
-        core_params = {'measures': []}
-
-        # 4. Obtenção das métricas necessárias para calcular as medidas
-
-        repository = self.get_repository()
-
-        measure: SupportedMeasure
-        for measure in qs:
-            metric_params = measure.get_latest_metric_params(repository)
-
-            if metric_params:
-                core_params['measures'].append(
-                    {
-                        'key': measure.key,
-                        'parameters': metric_params,
-                    }
-                )
-        # 5. Pega as configurações das thresholds
-        product = self.get_product()
-        pre_config = product.pre_configs.first()
-
-        calculate_result = calculate_measures(core_params, pre_config.data)
-
-        calculated_values = {
-            measure['key']: measure['value']
-            for measure in calculate_result['measures']
-        }
-        # 6. Salvando no banco de dados as medidas calculadas
-
-        calculated_measures = []
-
-        measure: SupportedMeasure
-        for measure in qs:
-            if measure.key not in calculated_values:
-                continue
-
-            value = calculated_values[measure.key]
-
-            calculated_measures.append(
-                CalculatedMeasure(
-                    measure=measure,
-                    value=value,
-                    repository=repository,
-                    created_at=created_at,
-                )
-            )
-
-        CalculatedMeasure.objects.bulk_create(calculated_measures)
-
-        # 7. Retornando o resultado
-        serializer = LatestMeasuresCalculationsRequestSerializer(
-            qs,
-            many=True,
-            context=self.get_serializer_context(),
-        )
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class SupportedMeasureModelViewSet(

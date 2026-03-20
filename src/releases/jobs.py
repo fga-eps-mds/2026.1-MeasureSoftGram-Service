@@ -59,7 +59,7 @@ def get_releases_and_create_results():
                 'subcharacteristics__calculated_subcharacteristics',
             )
 
-            pre_config = product.pre_configs.first()   # type: ignore
+            pre_config = product.release_configuration.first()   # type: ignore
 
             core_params = {'characteristics': []}
 

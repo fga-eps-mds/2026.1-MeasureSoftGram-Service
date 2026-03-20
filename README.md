@@ -1,4 +1,4 @@
-# 2023-2 MeasureSoftGram-Service
+# 2024-1 MeasureSoftGram-Service
 
 ## Badges
 
@@ -32,44 +32,20 @@ docker-compose up
 
 
 ## Endpoints
-```
-## Lista todas as métricas suportadas pelo MeasureSoftGram
-- GET: https://measuresoftgram-service.herokuapp.com/api/v1/supported-metrics/
 
-## Detalha o `repository` de ID 1
-- GET: https://measuresoftgram-service.herokuapp.com/api/v1/organizations/1/repository/1/
+Swagger fica na rota `link/swagger/`
 
-## Lista o último valor coletado de cada uma das métricas suportadas
-- GET: https://measuresoftgram-service.herokuapp.com/api/v1/organizations/1/repository/1/metrics/
-
-## Lista o último valor coletado de cada um métricas específica
-- GET: https://measuresoftgram-service.herokuapp.com/api/v1/organizations/1/repository/1/metrics/<int>/
-
-## Lista o histórico de valores coletadas de cada uma das métricas suportadas
-- GET: https://measuresoftgram-service.herokuapp.com/api/v1/organizations/1/repository/1/history/metrics/
-
-## Lista o histórico de valores coletadas de uma métrica específica
-- GET: https://measuresoftgram-service.herokuapp.com/api/v1/organizations/1/repository/1/history/metrics/<int>/
-
-## Coleta um novo valor de uma métrica
-- POST: https://measuresoftgram-service.herokuapp.com/api/v1/organizations/1/repository/1/create/metrics/
-```
 
 ## Acessa o painel administrativo do MeasureSoftGram
-- GET: https://measuresoftgram-service.herokuapp.com/admin/
+- GET: https://epsmsg.shop/admin/
 - Converse com os membros da equipe para socilitar uma credencial de acesso
-
-```
-
 
 ## How to run tests
 Install this dependencies
 
-
 ```
 pip install -r requirements.txt
 ```
-
 
 We are using tox for the tests, so it is good to install the tox:
 
@@ -102,11 +78,11 @@ Our services are available on [Docker Hub](https://hub.docker.com/):
 ### Wiki
 
 For more informations, you can see our wiki:
-- [Wiki](https://fga-eps-mds.github.io/2023-1-MeasureSoftGram-Doc/).
+- [Wiki](https://fga-eps-mds.github.io/2024.1-MeasureSoftGram-DOC/).
 
 ## Contribute
 
-Do you want to contribute with our project? Access our [contribution guide](https://github.com/fga-eps-mds/2021-2-MeasureSoftGram-Service/blob/develop/CONTRIBUTING.md) where we explain how you do it.
+Do you want to contribute with our project? Access our [contribution guide](https://github.com/fga-eps-mds/2024-1-MeasureSoftGram-Service/blob/develop/CONTRIBUTING.md) where we explain how you do it.
 
 ## License
 

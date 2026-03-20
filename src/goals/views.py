@@ -94,15 +94,3 @@ class CreateGoalModelViewSet(
         product = self.get_product()
         created_by = self.get_user()
         serializer.save(product=product, created_by=created_by)
-
-
-class ReleaseListModelViewSet(GoalModelViewSetMixin):
-    serializer_class = ReleasesSerializer
-    serializer_args = {'many': True}
-    queryset = Goal.objects.all()
-
-    def get_goals(self, product):
-        release_id = self.request.query_params.get('release_id', None)
-        if release_id:
-            return Goal.objects.filter(id=release_id)
-        return Goal.objects.filter(product=product)

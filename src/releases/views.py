@@ -8,9 +8,14 @@ from goals.models import Goal
 from organizations.models import Repository
 from characteristics.models import CalculatedCharacteristic
 from releases.service import (
+    get_accomplished_values,
+    get_norm_diff,
+    get_planned_values,
     get_process_calculated_characteristics,
     get_calculated_characteristic_by_ids_repositories,
     get_arrays_diff,
+    calculate_diff,
+    update_release_end_at
 )
 
 from rest_framework import viewsets
@@ -19,10 +24,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.transformations import diff, norm_diff
+from core.transformations import diff
 
 
-class CreateReleaseModelViewSet(viewsets.ModelViewSet):
+class ReleaseModelViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
@@ -64,15 +69,19 @@ class CreateReleaseModelViewSet(viewsets.ModelViewSet):
 
         release = Release.objects.filter(
             product=product_key,
-            start_at__gte=init_date,
             start_at__lte=final_date,
             end_at__gte=init_date,
-            end_at__lte=final_date,
-        ).first()
+        )
 
-        if release:
+        if release.count() > 1:
             return Response(
-                data={'detail': 'Já existe uma release neste período'},
+                data={'detail': 'Já existem múltiplas releases neste período'},
+                status=400,
+            )
+        elif release:
+            release_data = ReleaseSerializer(release.first()).data
+            return Response(
+                data={'detail': 'Já existe uma release neste período', 'release': release_data},
                 status=400,
             )
 
@@ -145,3 +154,61 @@ class CreateReleaseModelViewSet(viewsets.ModelViewSet):
             )
         else:
             return Response({'detail': 'Release não encontrada'}, status=404)
+
+    @action(
+        detail=True,
+        methods=['get']
+    )
+    def analysis_data(self, request, pk=None, *args, **kwargs):
+        release_id = pk
+        product_pk = self.kwargs['product_pk']
+
+        release = Release.objects.filter(id=release_id).first()
+
+        if release is None:
+            return Response({'detail': 'Release não encontrada'}, status=404)
+
+        repositories_ids = list(
+            Repository.objects.filter(product_id=product_pk)
+            .values_list('id', flat=True)
+            .all()
+        )
+
+        serialized_release = ReleaseAllSerializer(release).data
+        planned_values = get_planned_values(release)
+        accomplished_values = get_accomplished_values(release, repositories_ids)
+        accomplished_with_norm_diff = get_norm_diff(planned_values, accomplished_values)
+        accomplished_values_with_diff_and_norm_diff = calculate_diff(planned_values, accomplished_with_norm_diff)
+
+        return Response(
+            {
+                'release': serialized_release,
+                'planned': planned_values,
+                'accomplished': accomplished_values_with_diff_and_norm_diff,
+            }
+        )
+
+    @action(detail=True, methods=['put'], url_path='update-end-at')
+    def update_end_at(self, request, pk=None, *args, **kwargs):
+        # Obtendo o novo valor de end_at da requisição
+        new_end_at = request.data.get('end_at')
+
+        if not new_end_at:
+            return Response({'detail': 'O campo end_at é obrigatório.'}, status=400)
+
+        # Utilizando o serviço para atualizar o end_at
+        release = update_release_end_at(pk, new_end_at)  # type: ignore
+
+        if release:
+            serializer = self.get_serializer(release)
+            return Response(serializer.data, status=200)
+        else:
+            return Response({'detail': 'Release não encontrada'}, status=404)
+
+
+class ReleaseListAllModelViewSet(viewsets.ModelViewSet):
+    serializer_class = ReleaseAllSerializer
+    queryset = Release.objects.all()
+
+    def get_releases(self, product):
+        return Release.objects.filter(product=product)

@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from pre_configs.models import PreConfig
+from release_configuration.models import ReleaseConfiguration
 
 
-@admin.register(PreConfig)
-class PreConfigAdmin(admin.ModelAdmin):
+@admin.register(ReleaseConfiguration)
+class ReleaseConfigurationurationAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'name',

@@ -101,3 +101,9 @@ class APIAcessTokenRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
         fields = ('key',)
+
+
+class GitHubAccessTokenRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Token
+        fields = ('key',)

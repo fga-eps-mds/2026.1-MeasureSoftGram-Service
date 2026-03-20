@@ -18,32 +18,37 @@ class MissingSupportedSubCharacteristicError(Exception):
     pass
 
 
-class EntityNotDefinedInPreConfiguration(ValueError):
+class EntityNotDefinedInReleaseConfigurationuration(ValueError):
     """
     Exceção criada quando uma entidade é procurada em uma pré-configuração,
     mas esta entidade não foi selecionada na pré-configuração.
     """
-
     pass
 
 
-class MeasureNotDefinedInPreConfiguration(
-    EntityNotDefinedInPreConfiguration,
+class MeasureNotDefinedInReleaseConfigurationuration(
+    EntityNotDefinedInReleaseConfigurationuration,
 ):
     pass
 
 
-class SubCharacteristicNotDefinedInPreConfiguration(
-    EntityNotDefinedInPreConfiguration
+class SubCharacteristicNotDefinedInReleaseConfigurationuration(
+    EntityNotDefinedInReleaseConfigurationuration
 ):
     pass
 
 
-class CharacteristicNotDefinedInPreConfiguration(
-    EntityNotDefinedInPreConfiguration
+class CharacteristicNotDefinedInReleaseConfigurationuration(
+    EntityNotDefinedInReleaseConfigurationuration
 ):
     pass
 
 
-class InvalidPreConfigException(ValueError):
+class InvalidReleaseConfigurationException(ValueError):
+    pass
+
+
+class CalculateModelException(
+    Exception
+):
     pass

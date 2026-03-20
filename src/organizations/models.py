@@ -2,7 +2,7 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.text import slugify
-from pre_configs.models import PreConfig
+from release_configuration.models import ReleaseConfiguration
 from utils import staticfiles
 from decimal import Decimal
 
@@ -77,7 +77,7 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
-        PreConfig.objects.get_or_create(
+        ReleaseConfiguration.objects.get_or_create(
             name='Default pre-config',
             data=staticfiles.DEFAULT_PRE_CONFIG,
             product=self,
@@ -118,6 +118,8 @@ class Repository(models.Model):
         on_delete=models.CASCADE,
         related_name='repositories',
     )
+
+    imported = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         self.key = slugify(self.name)

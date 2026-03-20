@@ -1,0 +1,25 @@
+name: msg
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: msg
+      uses: fga-eps-mds/2024.1-MeasureSoftGram-Action@fix/ENH010
+      with: 
+        githubToken: ${{ secrets.GITHUBTOKEN }} # Token do GitHub
+        msgramServiceToken: ${{ secrets.MSGRAMSERVICETOKEN }} # Token para acessar o serviço MeasureSoftGram
+        productName: "Measure"
+        workflowName: 'Build' # Nome do seu worflow que realiza a build da release
+        collectSonarqubeMetrics: true # Flag que determina se métricas do Sonarqube serão persistidas
+        collectGithubMetrics: true # Flag que determina se métricas do Github serão persistidas
+        usLabel: "US" # Lab

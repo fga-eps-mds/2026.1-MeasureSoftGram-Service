@@ -15,7 +15,7 @@ from entity_trees.serializers import (
     pre_config_to_entity_tree,
 )
 from organizations.models import Product
-from pre_configs.models import PreConfig
+from release_configuration.models import ReleaseConfiguration
 
 
 class SupportedEntitiesRelationshipTreeViewSet(
@@ -43,7 +43,7 @@ class SupportedEntitiesRelationshipTreeViewSet(
         return Response(serializer.data)
 
 
-class PreConfigEntitiesRelationshipTreeViewSet(
+class ReleaseConfigurationEntitiesRelationshipTreeViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -64,6 +64,6 @@ class PreConfigEntitiesRelationshipTreeViewSet(
 
     def list(self, request, *args, **kwargs):
         product = self.get_product()
-        current_pre_config = product.pre_configs.first()
+        current_pre_config = product.release_configuration.first()
         entity_tree = pre_config_to_entity_tree(current_pre_config)
         return Response(entity_tree)

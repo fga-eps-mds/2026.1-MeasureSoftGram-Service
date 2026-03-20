@@ -1,16 +1,15 @@
 from django.db import models
 from django.utils import timezone
 from util import Checker  # util do core
-from util.constants import AGGREGATED_NORMALIZED_MEASURES_MAPPING
-
+from resources.constants import AGGREGATED_NORMALIZED_MEASURES_MAPPING
 import utils
 from characteristics.models import SupportedCharacteristic
 from measures.models import SupportedMeasure
 from subcharacteristics.models import SupportedSubCharacteristic
-from utils.exceptions import InvalidPreConfigException
+from utils.exceptions import InvalidReleaseConfigurationException
 
 
-class PreConfig(models.Model):
+class ReleaseConfiguration(models.Model):
     """
     Classe que abstrai uma pré-configuração do modelo.
 
@@ -31,7 +30,7 @@ class PreConfig(models.Model):
 
     product = models.ForeignKey(
         to='organizations.Product',
-        related_name='pre_configs',
+        related_name='release_configuration',
         on_delete=models.CASCADE,
     )
 
@@ -44,7 +43,7 @@ class PreConfig(models.Model):
         está sendo criada ou editada é ou não válida
         """
         if self.id:
-            raise ValueError("It's not allowed to edit a pre-configuration")
+            raise ValueError("It's not allowed to edit a release-configuration")
 
         self.validate_measures(self.data)
         self.validate_measures_weights(self.data)
@@ -78,9 +77,7 @@ class PreConfig(models.Model):
                     if measure['key'] == measure_key:
                         return measure['weight']
 
-        raise utils.exceptions.MeasureNotDefinedInPreConfiguration(
-            f'Measure {measure_key} not defined in pre-configuration',
-        )
+        return None
 
     def get_subcharacteristic_weight(
         self, subcharacteristic_key: str
@@ -90,24 +87,14 @@ class PreConfig(models.Model):
                 if subcharacteristic['key'] == subcharacteristic_key:
                     return subcharacteristic['weight']
 
-        raise utils.exceptions.SubCharacteristicNotDefinedInPreConfiguration(
-            (
-                f'Subcharacteristic {subcharacteristic_key} '
-                'not defined in pre-configuration',
-            )
-        )
+        return None
 
     def get_characteristic_weight(self, characteristic_key: str) -> float:
         for characteristic in self.data['characteristics']:
             if characteristic['key'] == characteristic_key:
                 return characteristic['weight']
 
-        raise utils.exceptions.CharacteristicNotDefinedInPreConfiguration(
-            (
-                f'Characteristic {characteristic_key} '
-                'not defined in pre-configuration',
-            )
-        )
+        return None
 
     def get_characteristics_keys(self):
         return [charac['key'] for charac in self.data['characteristics']]
@@ -161,7 +148,7 @@ class PreConfig(models.Model):
         )
 
         if unsuported:
-            raise InvalidPreConfigException(
+            raise InvalidReleaseConfigurationException(
                 f'The following measures are not supported: {unsuported}'
             )
 
@@ -170,7 +157,7 @@ class PreConfig(models.Model):
         """
         Verifica se o somatório do peso das medidas é igual a 100
 
-        Raises a `InvalidPreConfigException` caso alguma weight não seja
+        Raises a `InvalidReleaseConfigurationException` caso alguma weight não seja
         """
         for characteristic in data['characteristics']:
             for subcharacteristic in characteristic['subcharacteristics']:
@@ -180,7 +167,7 @@ class PreConfig(models.Model):
                 )
 
                 if sum_of_weights != 100:
-                    raise InvalidPreConfigException(
+                    raise InvalidReleaseConfigurationException(
                         (
                             'The sum of weights of measures of subcharacteristic '
                             f"`{subcharacteristic['key']}` is not 100"
@@ -193,7 +180,7 @@ class PreConfig(models.Model):
         Verifica se as subcharacteristics contidas no dicionário `data` são
         suportadas
 
-        Raises a `InvalidPreConfigException` caso alguma subcharacteristic não seja
+        Raises a `InvalidReleaseConfigurationException` caso alguma subcharacteristic não seja
         """
         selected_subcharacteristics_set = set()
 
@@ -208,7 +195,7 @@ class PreConfig(models.Model):
         )
 
         if unsuported:
-            raise InvalidPreConfigException(
+            raise InvalidReleaseConfigurationException(
                 f'The following subcharacteristics are not supported: {unsuported}'
             )
 
@@ -219,7 +206,7 @@ class PreConfig(models.Model):
         na pré-configuração são realmente relacionadas com as
         subcaracteristicas no modelo
 
-        Raises a `InvalidPreConfigException` caso alguma medida não seja relacionada
+        Raises a `InvalidReleaseConfigurationException` caso alguma medida não seja relacionada
         """
 
         for characteristic in data['characteristics']:
@@ -240,9 +227,9 @@ class PreConfig(models.Model):
                     ]
                     invalid_measures: str = ', '.join(invalid_measures)
 
-                    raise InvalidPreConfigException(
+                    raise InvalidReleaseConfigurationException(
                         (
-                            'Failed to save pre-config. It is not allowed to '
+                            'Failed to save release-config. It is not allowed to '
                             f'associate the measures [{invalid_measures}] with the '
                             f'subcharacteristic {subchar.key}'
                         )
@@ -253,7 +240,7 @@ class PreConfig(models.Model):
         """
         Verifica se o somatório do peso das subcharacteristics é igual a 100
 
-        Raises a `InvalidPreConfigException` caso alguma weight não seja
+        Raises a `InvalidReleaseConfigurationException` caso alguma weight não seja
         """
         for characteristic in data['characteristics']:
             sum_of_weights: int = sum(
@@ -262,7 +249,7 @@ class PreConfig(models.Model):
             )
 
             if sum_of_weights != 100:
-                raise InvalidPreConfigException(
+                raise InvalidReleaseConfigurationException(
                     (
                         'The sum of weights of subcharacteristics of '
                         f"characteristic `{characteristic['key']}` is not 100"
@@ -275,7 +262,7 @@ class PreConfig(models.Model):
         Verifica se as characteristics contidas no dicionário `data` são
         suportadas
 
-        Raises a `InvalidPreConfigException` caso alguma characteristic não seja
+        Raises a `InvalidReleaseConfigurationException` caso alguma characteristic não seja
         """
         selected_characteristics_set = set()
 
@@ -289,7 +276,7 @@ class PreConfig(models.Model):
         )
 
         if unsuported:
-            raise InvalidPreConfigException(
+            raise InvalidReleaseConfigurationException(
                 f'The following characteristics are not supported: {unsuported}'
             )
 
@@ -300,7 +287,7 @@ class PreConfig(models.Model):
         characteristics na pré-configuração são realmente relacionadas com as
         characteristics no modelo
 
-        Raises a `InvalidPreConfigException` caso alguma subcharacteristic não seja
+        Raises a `InvalidReleaseConfigurationException` caso alguma subcharacteristic não seja
         """
 
         for characteristic in data['characteristics']:
@@ -319,9 +306,9 @@ class PreConfig(models.Model):
                 invalid_subs: list = [f'`{key}`' for key in invalid_subs]
                 invalid_subs: str = ', '.join(invalid_subs)
 
-                raise InvalidPreConfigException(
+                raise InvalidReleaseConfigurationException(
                     (
-                        'Failed to save pre-config. It is not allowed to '
+                        'Failed to save release-config. It is not allowed to '
                         f'associate the subcharacteristics [{invalid_subs}] '
                         f'with the characteristic {charact.key}'
                     )
@@ -332,7 +319,7 @@ class PreConfig(models.Model):
         """
         Verifica se o somatório do peso das characteristics é igual a 100
 
-        Raises a `InvalidPreConfigException` caso alguma weight não seja
+        Raises a `InvalidReleaseConfigurationException` caso alguma weight não seja
         """
         sum_of_weights: int = sum(
             characteristic['weight']
@@ -340,7 +327,7 @@ class PreConfig(models.Model):
         )
 
         if sum_of_weights != 100:
-            raise InvalidPreConfigException(
+            raise InvalidReleaseConfigurationException(
                 'The sum of weights of characteristics is not 100'
             )
 
@@ -357,6 +344,8 @@ class PreConfig(models.Model):
             'test_coverage': 'test_coverage',
             'commented_file_density': 'comment_files_density',
             'duplication_absense': 'absence_of_duplications',
+            'ci_feedback_time': 'ci_feedback_time',
+            'team_throughput': 'team_throughput',
         }
 
         for characteristic in data['characteristics']:
@@ -374,6 +363,6 @@ class PreConfig(models.Model):
                             checker_adapter.get(measure.get('key')),
                         )
                     except Exception as e:
-                        raise InvalidPreConfigException(
+                        raise InvalidReleaseConfigurationException(
                             f'Invalid Threshold! {str(measure)} {str(e)}'
                         )

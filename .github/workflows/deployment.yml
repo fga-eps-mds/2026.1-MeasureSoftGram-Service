@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2 
+      - uses: actions/checkout@v4
       - name: Deploy to EC2
         env:
             PRIVATE_KEY: ${{ secrets.SSH_EC2_PRIVATE_KEY }}
@@ -29,11 +29,11 @@ jobs:
 
               echo "Building images..." &&
 
-              sudo docker-compose build &&
+              sudo docker compose build &&
 
-              echo "Running docker-compose up..." &&
+              echo "Running docker compose up..." &&
 
-              sudo docker-compose up -d &&
+              sudo docker compose up -d &&
 
               echo "Deployment complete."
               '

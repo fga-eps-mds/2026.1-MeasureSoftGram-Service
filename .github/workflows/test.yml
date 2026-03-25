@@ -36,7 +36,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Instalar dependências
-        run: uv sync --frozen --all-extras
+        run: uv sync --frozen --no-install-project --all-extras
 
       - name: Rodar testes
         run: |

@@ -142,4 +142,4 @@ cython_debug/
 
 junit.xml
 
-env-vars
+env-varssrc/staticfiles/

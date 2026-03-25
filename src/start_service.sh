@@ -32,5 +32,8 @@ python3 manage.py migrate
 echo '======= PREPOPULATING THE DATABASE'
 python3 manage.py load_initial_data
 
+echo '======= COLLECTING STATIC FILES'
+python3 manage.py collectstatic --noinput
+
 echo '======= RUNNING SERVER'
-python3 manage.py runserver 0.0.0.0:80
+python3 manage.py runserver 0.0.0.0:8080

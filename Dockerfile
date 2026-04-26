@@ -1,18 +1,36 @@
-FROM python:3.10-buster
+# ============================================================
+# Stage 1 — Builder (instala dependências com uv)
+# ============================================================
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
-ENV PYTHONUNBUFFERED 1
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0
 
-EXPOSE 80
-EXPOSE 8181
+WORKDIR /app
 
-RUN mkdir /src
+# Copiar arquivos de dependência primeiro (melhor cache de layers)
+COPY pyproject.toml uv.lock /app/
+
+# Instalar dependências (cache de deps separado do código)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project --no-dev
+
+# ============================================================
+# Stage 2 — Runtime (imagem slim, sem uv)
+# ============================================================
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8080
+
 WORKDIR /src
-COPY src requirements.txt /src/
 
-RUN pip install -r requirements.txt
+# Copiar venv do builder
+COPY --from=builder /app/.venv /app/.venv
 
-# copy project
-COPY . .
-
-# collect static files
-RUN python manage.py collectstatic --noinput
+# Copiar código
+COPY src /src/

@@ -1,18 +1,14 @@
-version: "3.8"
-
 volumes:
   service_postgres_data:
-  pip_cache:
-
 
 services:
   db:
     container_name: db
-    image: postgres:latest
+    image: postgres:18-alpine
     ports:
       - "5432:5432"
     volumes:
-      - service_postgres_data:/var/lib/postgresql/data
+      - service_postgres_data:/var/lib/postgresql
     env_file:
       - ./env-vars/.postgres.env
 
@@ -20,15 +16,20 @@ services:
     container_name: service
     build:
       context: .
-    command: [ "./start_service.sh" ]
+    command: ["./start_service.sh"]
     ports:
-      - "8080:80" # Main port
-      - "8181:8181" # Debug port
+      - "8080:8080"
     volumes:
       - ./src:/src
-      - pip_cache:/usr/local/lib/python3/site-packages
     env_file:
       - ./env-vars/.service.env
       - ./env-vars/.postgres.env
     depends_on:
       - db
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /src
+        - action: rebuild
+          path: ./pyproject.toml

@@ -12,7 +12,7 @@ jobs:
 
     services:
       db:
-        image: postgres
+        image: postgres:18-alpine
         env:
           POSTGRES_DB: postgres
           POSTGRES_USER: postgres
@@ -23,32 +23,36 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
-      - name: Instalar requirements
-        run: pip install -r requirements.txt
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
 
-      - name: Instalar tox
-        run: pip install tox
+      - name: Instalar dependências
+        run: uv sync --frozen --no-install-project --all-extras
 
       - name: Rodar testes
-        run: tox
+        run: |
+          uv run coverage erase
+          uv run coverage run -m pytest src -vv --junitxml=./junit.xml
+          uv run coverage xml -o coverage.xml
+          uv run coverage report --show-missing
 
       - name: Rodar Migrations
         run: |
-          python src/manage.py migrate
-          python src/manage.py makemigrations --check --dry-run
+          uv run python src/manage.py migrate
+          uv run python src/manage.py makemigrations --check --dry-run
 
       - name: Corrige reports path
         run: |
-          sed -i 's/<source>\/home\/runner\/work\/2023-2-MeasureSoftGram-Service\/2023-2-MeasureSoftGram-Service<\/source>/<source>\/github\/workspace<\/source>/g' coverage.xml
+          sed -i 's|<source>.*/2026.1-MeasureSoftGram-Service</source>|<source>/github/workspace</source>|g' coverage.xml
           sed -i 's/classname="/classname="src./g' junit.xml
 
       - name: Scanner do SonarCloud
@@ -66,5 +70,5 @@ jobs:
           fail_ci_if_error: true
           files: ./coverage.xml
           flags: unittests
-          name: 2024.1-MeasureSoftGram-Service
+          name: 2026.1-MeasureSoftGram-Service
           verbose: true

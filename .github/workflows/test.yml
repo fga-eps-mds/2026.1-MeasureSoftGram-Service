@@ -50,11 +50,6 @@ jobs:
           uv run python src/manage.py migrate
           uv run python src/manage.py makemigrations --check --dry-run
 
-      - name: Corrige reports path
-        run: |
-          sed -i 's|<source>.*/2026.1-MeasureSoftGram-Service</source>|<source>/github/workspace</source>|g' coverage.xml
-          sed -i 's/classname="/classname="src./g' junit.xml
-
       - name: Scanner do SonarCloud
         uses: SonarSource/sonarcloud-github-action@v2.3.0
         env:

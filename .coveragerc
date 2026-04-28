@@ -1,0 +1,16 @@
+[run]
+relative_files = True
+source = src
+branch = True
+omit =
+    src/utils/staticfiles/*
+    src/*/tests.py
+    src/*/tests/*
+    src/*/test_*.py
+    src/manage.py
+    src/config/settings.py
+    src/*/migrations/*
+
+[report]
+show_missing = True
+skip_covered = False

@@ -30,6 +30,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "t", "1")
 
+# ALLOWED_HOSTS lido de env (default: localhost). Necessario quando DEBUG=False.
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+
+
 # Allowed origins on CORS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -110,7 +114,10 @@ MIDDLEWARE = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.2023-2-measuresoftgram-service-production.up.railway.app"
+    o.strip() for o in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "https://*.2023-2-measuresoftgram-service-production.up.railway.app"
+    ).split(",") if o.strip()
 ]
 ROOT_URLCONF = "config.urls"
 

@@ -2,7 +2,7 @@ name: Export de métricas
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags:
       - "v*"
   workflow_dispatch:

@@ -2,6 +2,7 @@ from math_model.serializer import MetricsSerializer
 from rest_framework import mixins, viewsets, status
 from math_model.services import MathModelServices
 from rest_framework.response import Response
+from django.db import transaction
 from utils import utils
 from utils.exceptions import CalculateModelException
 from .utils import parse_release_configuration
@@ -30,11 +31,12 @@ class CalculateMathModelViewSet(
 
         response = {}
         try:
-            response["metrics"] = services.collect_metrics(request.data)
-            response["measures"] = services.calculate_measures(measure_keys, release_configuration)
-            response["subcharacteristics"] = services.calculate_sucharacteristics(subchar_keys, release_configuration)
-            response["characteristics"] = services.calculcate_characterisctics(char_keys, release_configuration)
-            response["tsqmi"] = services.calculate_tsqmi(release_configuration)
+            with transaction.atomic():
+                response["metrics"] = services.collect_metrics(request.data)
+                response["measures"] = services.calculate_measures(measure_keys, release_configuration)
+                response["subcharacteristics"] = services.calculate_sucharacteristics(subchar_keys, release_configuration)
+                response["characteristics"] = services.calculcate_characterisctics(char_keys, release_configuration)
+                response["tsqmi"] = services.calculate_tsqmi(release_configuration)
         except CalculateModelException as exc:
             return Response(
                 {'error': str(exc)},

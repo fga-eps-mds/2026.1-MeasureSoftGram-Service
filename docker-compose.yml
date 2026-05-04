@@ -5,12 +5,19 @@ services:
   db:
     container_name: db
     image: postgres:18-alpine
+    # Bind so localhost (host) — evita conflito com Postgres do host na 0.0.0.0:5432.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - service_postgres_data:/var/lib/postgresql
     env_file:
       - ./env-vars/.postgres.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
   service:
     container_name: service
@@ -25,7 +32,9 @@ services:
       - ./env-vars/.service.env
       - ./env-vars/.postgres.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
     develop:
       watch:
         - action: sync

@@ -31,6 +31,8 @@ services:
     env_file:
       - ./env-vars/.service.env
       - ./env-vars/.postgres.env
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
     depends_on:
       db:
         condition: service_healthy

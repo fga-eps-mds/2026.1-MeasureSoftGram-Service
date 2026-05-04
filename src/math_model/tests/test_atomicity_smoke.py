@@ -1,21 +1,13 @@
 """
-Smoke test do bug de atomicidade no endpoint de cálculo do modelo
-matemático.
+Smoke tests do endpoint de cálculo do modelo matemático.
 
-Cobre o Cenário 2 da US12 (Service refactor):
-> Quando ocorre um erro em qualquer etapa do cálculo das hierarquias
-> ou medidas, o sistema deve interromper a operação e nenhuma métrica
-> parcial deve ser inserida no banco.
+Cobertura dos cenários da US12:
+- Cenário 1 (fluxo feliz): payload válido → 201 + persistência completa.
+- Cenário 2 (falha mid-cálculo): mock força exceção → rollback total.
 
-Hoje (sem @transaction.atomic em math_model/views.py:32-42), os
-bulk_create dos passos 1 e 2 já foram commitados quando o passo 3
-falha — banco fica em estado parcialmente calculado.
-
-Este teste mocka calculate_subcharacteristics (msgram-core) com
-side_effect=CalculateModelException no passo 3 e asserta que
-CalculatedMeasure deveria estar vazia. Vai FALHAR no código atual
-(red), provando o bug. Após o fix (transaction.atomic envolvendo
-o fluxo na view), vira green.
+Cenário 2 prova a "DOR DOCUMENTADA: ausência de transação" registrada
+em src/math_model/CLAUDE.md. Sem @transaction.atomic, falha em qualquer
+passo deixa rastros dos passos anteriores. Após o fix, vira green.
 """
 from unittest.mock import patch
 
@@ -142,3 +134,45 @@ class MathModelAtomicitySmokeTest(APITestCaseExpanded):
         assert CalculatedSubCharacteristic.objects.count() == 0
         assert CalculatedCharacteristic.objects.count() == 0
         assert TSQMI.objects.count() == 0
+
+    def test_fluxo_feliz_persiste_todas_as_camadas(self):
+        """
+        Cenário 1 da US: payload válido executa os 5 passos sem mock,
+        retorna 201 e persiste todas as camadas.
+
+        Serve de rede de proteção pro refactor "calcula em memória →
+        persiste no fim": shape da resposta e contagens não-zero
+        devem ser preservadas, mesmo que a implementação interna mude
+        (banco vs payload, intercalado vs no fim).
+
+        Não compara valores — só shape — pra ficar robusto a mudanças
+        de leitura (banco com janela 20min vs payload em memória) que
+        podem alterar entradas do msgram-core.
+        """
+        empty_payload = {
+            'github': {'metrics': []},
+            'sonarqube': {'components': []},
+        }
+
+        response = self.client.post(self.url, empty_payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED, (
+            f'esperava 201, recebeu {response.status_code}: '
+            f'{response.content!r}'
+        )
+
+        # Resposta tem as 5 chaves esperadas
+        body = response.json()
+        for key in ('metrics', 'measures', 'subcharacteristics',
+                    'characteristics', 'tsqmi'):
+            assert key in body, f'chave "{key}" ausente na resposta'
+
+        # As 4 camadas calculadas devem ter sido persistidas
+        assert CalculatedMeasure.objects.count() > 0, 'medidas não persistiram'
+        assert CalculatedSubCharacteristic.objects.count() > 0, (
+            'subcharacteristics não persistiram'
+        )
+        assert CalculatedCharacteristic.objects.count() > 0, (
+            'characteristics não persistiram'
+        )
+        assert TSQMI.objects.count() == 1, 'TSQMI não persistiu (esperava 1)'

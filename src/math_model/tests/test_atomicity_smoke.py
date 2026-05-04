@@ -4,10 +4,18 @@ Smoke tests do endpoint de cálculo do modelo matemático.
 Cobertura dos cenários da US12:
 - Cenário 1 (fluxo feliz): payload válido → 201 + persistência completa.
 - Cenário 2 (falha mid-cálculo): mock força exceção → rollback total.
+- Cenário 3 (sem janela 20min): cálculo não lê CollectedMetric do banco
+  durante o POST — usa o payload em memória.
 
 Cenário 2 prova a "DOR DOCUMENTADA: ausência de transação" registrada
 em src/math_model/CLAUDE.md. Sem @transaction.atomic, falha em qualquer
 passo deixa rastros dos passos anteriores. Após o fix, vira green.
+
+Cenário 3 prova que o cálculo deixou de depender da janela de 20min em
+metrics/models.py:113. Hoje (mesmo com atomic), o fluxo chama
+SupportedMetric.get_latest_metric_value que ativa a janela. Após o
+refactor "calcula em memória", essa função não é mais consultada
+durante o POST.
 """
 from unittest.mock import patch
 
@@ -134,6 +142,62 @@ class MathModelAtomicitySmokeTest(APITestCaseExpanded):
         assert CalculatedSubCharacteristic.objects.count() == 0
         assert CalculatedCharacteristic.objects.count() == 0
         assert TSQMI.objects.count() == 0
+
+    def test_fluxo_post_nao_le_collected_metric_do_banco(self):
+        """
+        Cenário 3 da US12 — eliminar janela de 20min.
+
+        Hoje, calculate_measures chama
+        SupportedMeasure.get_latest_metric_params(repository)
+        em measures/models.py:39, que itera sobre as métricas e chama
+        SupportedMetric.get_latest_metric_value(repository) em
+        metrics/models.py:46 — função que ativa a janela de 20min em
+        metrics/models.py:113 para qualifiers FIL/UTS, e lê CollectedMetric
+        single-row para o resto.
+
+        Após o refactor "calcula em memória → persiste no fim", o cálculo
+        usa o payload da Action diretamente. get_latest_metric_value não
+        é mais consultada durante o POST. Essa função continua existindo
+        para outros usos (latest-values endpoint, etc), mas sai do fluxo
+        do cálculo.
+
+        Spy: substitui o método por um wrapper que conta chamadas.
+        """
+        from metrics.models import SupportedMetric
+
+        call_log = []
+        original = SupportedMetric.get_latest_metric_value
+
+        def spy(self_metric, repository):
+            call_log.append(self_metric.key)
+            return original(self_metric, repository)
+
+        empty_payload = {
+            'github': {'metrics': []},
+            'sonarqube': {'components': []},
+        }
+
+        with patch.object(
+            SupportedMetric, 'get_latest_metric_value', new=spy,
+        ):
+            response = self.client.post(
+                self.url, empty_payload, format='json',
+            )
+
+        assert response.status_code == status.HTTP_201_CREATED, (
+            f'esperava 201, recebeu {response.status_code}: '
+            f'{response.content!r}'
+        )
+
+        assert call_log == [], (
+            f'BUG: fluxo do POST consultou CollectedMetric do banco '
+            f'{len(call_log)} vez(es) via get_latest_metric_value: '
+            f'{call_log}. Cenário 3 da US12 exige cálculo em memória '
+            f'a partir do payload da Action — janela de 20min em '
+            f'metrics/models.py:113 deve sair desse fluxo. Refactor '
+            f'pendente: MathModelServices.calculate_measures deve '
+            f'receber métricas em memória, não buscar no banco.'
+        )
 
     def test_fluxo_feliz_persiste_todas_as_camadas(self):
         """

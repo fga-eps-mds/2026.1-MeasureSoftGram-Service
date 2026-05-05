@@ -573,7 +573,7 @@ wheels = [
 [[package]]
 name = "measuresoftgram-service"
 version = "1.0.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "asgiref" },
     { name = "dj-database-url" },
@@ -598,7 +598,7 @@ dependencies = [
     { name = "whitenoise" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "coverage" },
     { name = "freezegun" },
@@ -613,7 +613,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asgiref", specifier = "==3.5.2" },
-    { name = "coverage", marker = "extra == 'dev'" },
     { name = "dj-database-url", specifier = "==0.5.0" },
     { name = "dj-rest-auth", specifier = "==2.2.5" },
     { name = "django", specifier = "==4.0.6" },
@@ -626,23 +625,27 @@ requires-dist = [
     { name = "djangorestframework", specifier = "==3.13.1" },
     { name = "drf-nested-routers", specifier = "==0.93.4" },
     { name = "drf-yasg", specifier = "==1.21.7" },
-    { name = "freezegun", marker = "extra == 'dev'", specifier = "==1.5.1" },
     { name = "gunicorn", specifier = "==20.1.0" },
     { name = "msgram-core", specifier = "==1.4.9" },
-    { name = "parameterized", marker = "extra == 'dev'", specifier = "~=0.8.1" },
     { name = "psycopg2-binary", specifier = "==2.9.11" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==7.1.2" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==3.0.0" },
-    { name = "pytest-django", marker = "extra == 'dev'", specifier = "==4.5.2" },
-    { name = "pytest-mock", marker = "extra == 'dev'" },
     { name = "pytz", specifier = "==2022.1" },
     { name = "requests", specifier = "==2.31.0" },
     { name = "setuptools", specifier = ">=75.0.0,<78" },
     { name = "sqlparse", specifier = "==0.4.4" },
-    { name = "tox", marker = "extra == 'dev'", specifier = "==3.27.1" },
     { name = "whitenoise", specifier = "==6.2.0" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage" },
+    { name = "freezegun", specifier = "==1.5.1" },
+    { name = "parameterized", specifier = "~=0.8.1" },
+    { name = "pytest", specifier = "==7.1.2" },
+    { name = "pytest-cov", specifier = "==3.0.0" },
+    { name = "pytest-django", specifier = "==4.5.2" },
+    { name = "pytest-mock" },
+    { name = "tox", specifier = "==3.27.1" },
+]
 
 [[package]]
 name = "msgram-core"

@@ -13,8 +13,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock /app/
 
 # Instalar dependências (cache de deps separado do código)
+# Inclui dev group (pytest, pytest-django, etc.) — venv do container já vem
+# com tudo pra rodar a suite sem pip install manual.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --no-dev
+    uv sync --frozen --no-install-project
 
 # ============================================================
 # Stage 2 — Runtime (imagem slim, sem uv)
@@ -28,6 +30,11 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8080
 
 WORKDIR /src
+
+# curl pra healthcheck/diagnostico do proprio service em runtime
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar venv do builder
 COPY --from=builder /app/.venv /app/.venv

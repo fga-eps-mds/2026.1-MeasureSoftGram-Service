@@ -122,15 +122,31 @@ class UserRepos(viewsets.ReadOnlyModelViewSet):
 
         headers = {'Accept': 'application/json'}
 
-        urlToken = f'https://github.com/login/oauth/access_token?code={code}'
-        urlTokenOtherPart = f'&client_id={settings.GITHUB_CLIENT_ID}&client_secret={settings.GITHUB_SECRET}'
-        response = requests.get(urlToken + urlTokenOtherPart, headers=headers)
-        headersUser = {'Authorization': f'Bearer {response.json()["access_token"]}'}
+        urlToken = 'https://github.com/login/oauth/access_token'
+        data = {
+            'client_id': settings.GITHUB_CLIENT_ID,
+            'client_secret': settings.GITHUB_SECRET,
+            'code': code,
+            'redirect_uri': settings.LOGIN_REDIRECT_URL
+        }
+        response = requests.post(urlToken, data=data, headers=headers)
+        
+        token_data = response.json()
+        if 'access_token' not in token_data:
+            return Response({"error": "Falha na autenticação do GitHub", "details": token_data}, status=status.HTTP_400_BAD_REQUEST)
+
+        headersUser = {'Authorization': f'Bearer {token_data["access_token"]}'}
 
         urlUser = 'https://api.github.com/user'
         responseUser = requests.get(urlUser, headers=headersUser)
 
-        urlRepos = f'https://api.github.com/search/repositories?q=user:{responseUser.json()["login"]}'
-        responseRepos = requests.get(urlRepos)
+        urlRepos = 'https://api.github.com/user/repos?per_page=100'
+        responseRepos = requests.get(urlRepos, headers=headersUser)
+        repos_data = responseRepos.json()
 
-        return Response(responseRepos.json(), status=status.HTTP_200_OK)
+        formatted_response = {
+            "total_count": len(repos_data) if isinstance(repos_data, list) else 0,
+            "items": repos_data if isinstance(repos_data, list) else []
+        }
+
+        return Response(formatted_response, status=status.HTTP_200_OK)

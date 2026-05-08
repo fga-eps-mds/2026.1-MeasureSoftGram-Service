@@ -130,17 +130,16 @@ class UserRepos(viewsets.ReadOnlyModelViewSet):
             'redirect_uri': settings.LOGIN_REDIRECT_URL
         }
         response = requests.post(urlToken, data=data, headers=headers)
-        
         token_data = response.json()
         if 'access_token' not in token_data:
-            return Response({"error": "Falha na autenticação do GitHub", "details": token_data}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Falha na autenticação do GitHub", "details": token_data}
+                , status=status.HTTP_400_BAD_REQUEST)
 
-        headersUser = {'Authorization': f'Bearer {token_data["access_token"]}'}                
-
+        headersUser = {'Authorization': f'Bearer {token_data["access_token"]}'}
         urlRepos = 'https://api.github.com/user/repos?per_page=100'
         responseRepos = requests.get(urlRepos, headers=headersUser)
         repos_data = responseRepos.json()
-
         formatted_response = {
             "total_count": len(repos_data) if isinstance(repos_data, list) else 0,
             "items": repos_data if isinstance(repos_data, list) else []

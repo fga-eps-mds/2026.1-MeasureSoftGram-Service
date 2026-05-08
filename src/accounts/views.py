@@ -135,10 +135,7 @@ class UserRepos(viewsets.ReadOnlyModelViewSet):
         if 'access_token' not in token_data:
             return Response({"error": "Falha na autenticação do GitHub", "details": token_data}, status=status.HTTP_400_BAD_REQUEST)
 
-        headersUser = {'Authorization': f'Bearer {token_data["access_token"]}'}
-
-        urlUser = 'https://api.github.com/user'
-        responseUser = requests.get(urlUser, headers=headersUser)
+        headersUser = {'Authorization': f'Bearer {token_data["access_token"]}'}                
 
         urlRepos = 'https://api.github.com/user/repos?per_page=100'
         responseRepos = requests.get(urlRepos, headers=headersUser)

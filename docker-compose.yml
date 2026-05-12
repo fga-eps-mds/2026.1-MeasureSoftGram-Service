@@ -27,7 +27,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./src:/src
+      - ./src:/src:z
     env_file:
       - ./env-vars/.service.env
       - ./env-vars/.postgres.env

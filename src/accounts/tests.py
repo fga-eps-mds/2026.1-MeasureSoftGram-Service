@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from parameterized import parameterized
@@ -206,3 +208,71 @@ class AccountsViews(APITestCaseExpanded):
         self.assertEqual(
             Token.objects.get(user=self.user).key, response.json()['key']
         )
+
+    @patch('accounts.views.requests.get')
+    @patch('accounts.views.requests.post')
+    def test_user_repos_success(self, mock_post, mock_get):
+        repos = [{'id': 1, 'name': 'repo1'}, {'id': 2, 'name': 'repo2'}]
+
+        mock_post_response = MagicMock()
+        mock_post_response.json.return_value = {'access_token': 'gh_token_123'}
+        mock_post.return_value = mock_post_response
+
+        mock_get_response = MagicMock()
+        mock_get_response.json.return_value = repos
+        mock_get.return_value = mock_get_response
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('user-repos')
+        response = self.client.get(url, {'code': 'valid_code'}, format='json')
+
+        self.assertEqual(response.status_code, 200, response.json())
+        self.assertEqual(response.json()['total_count'], 2)
+        self.assertEqual(response.json()['items'], repos)
+
+    @patch('accounts.views.requests.post')
+    def test_user_repos_github_auth_failure(self, mock_post):
+        mock_post_response = MagicMock()
+        mock_post_response.json.return_value = {'error': 'bad_verification_code'}
+        mock_post.return_value = mock_post_response
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('user-repos')
+        response = self.client.get(url, {'code': 'bad_code'}, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json())
+        self.assertEqual(response.json()['error'], 'Falha na autenticação do GitHub')
+
+    @patch('accounts.views.requests.get')
+    @patch('accounts.views.requests.post')
+    def test_user_repos_non_list_response(self, mock_post, mock_get):
+        mock_post_response = MagicMock()
+        mock_post_response.json.return_value = {'access_token': 'gh_token_123'}
+        mock_post.return_value = mock_post_response
+
+        mock_get_response = MagicMock()
+        mock_get_response.json.return_value = {'message': 'Not Found'}
+        mock_get.return_value = mock_get_response
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('user-repos')
+        response = self.client.get(url, {'code': 'valid_code'}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['total_count'], 0)
+        self.assertEqual(response.json()['items'], [])
+
+    def test_user_repos_unauthenticated(self):
+        url = reverse('user-repos')
+        response = self.client.get(url, {'code': 'any_code'}, format='json')
+        self.assertEqual(response.status_code, 401)

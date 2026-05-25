@@ -307,3 +307,6 @@ CREATE_FAKE_DATA = os.getenv("CREATE_FAKE_DATA", "False").lower() in (
     "t",
     "1",
 )
+
+# Maximum number of days without a new TSQMI calculation before the badge shows "N/A".
+BADGE_STALENESS_DAYS = int(os.getenv("BADGE_STALENESS_DAYS", "30"))

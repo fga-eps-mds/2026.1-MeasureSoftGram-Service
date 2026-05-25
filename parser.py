@@ -25,6 +25,7 @@ METRICS_SONAR = [
 BASE_URL_SONAR = 'https://sonarcloud.io/api/measures/component_tree?component=fga-eps-mds_'
 OWNER = "fga-eps-mds"
 
+
 def save_sonar_metrics(tag):
     response = requests.get(f'{BASE_URL_SONAR}{REPO}&metricKeys={",".join(METRICS_SONAR)}&ps=500')
 
@@ -40,10 +41,11 @@ def save_sonar_metrics(tag):
 
     return
 
+
 def all_request_pages(data):
     total_runs = data["total_count"]
     pages = (total_runs // 100) + (1 if total_runs % 100 > 0 else 0)
-    for i in range(pages+1):
+    for i in range(pages + 1):
         if i == 0 or i == 1:
             continue
         api_url_now = api_url_runs + "?page=" + str(i)
@@ -52,15 +54,17 @@ def all_request_pages(data):
             data['workflow_runs'].append(j)
     return data
 
+
 def filter_request_per_date(data, date):
     data_filtered = []
     for i in data["workflow_runs"]:
-        if datetime.strptime(i["created_at"][:10],"%Y-%m-%d").strftime("%Y-%m-%d") == date:
+        if datetime.strptime(i["created_at"][:10], "%Y-%m-%d").strftime("%Y-%m-%d") == date:
             data_filtered.append(i)
     return {"workflow_runs": data_filtered}
 
+
 def save_github_metrics_runs():
-    response = requests.get(api_url_runs, params={'per_page': 100,})
+    response = requests.get(api_url_runs, params={'per_page': 100})
 
     data = response.json()
 
@@ -77,6 +81,7 @@ def save_github_metrics_runs():
         fp.close()
 
     return
+
 
 def save_github_metrics_issues():
     issues = []
@@ -106,6 +111,7 @@ def save_github_metrics_issues():
     # Salvar todas as issues em um arquivo JSON
     with open(file_path, 'w') as fp:
         json.dump(issues, fp, indent=4)
+
 
 if __name__ == '__main__':
 

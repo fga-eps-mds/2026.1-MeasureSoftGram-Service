@@ -145,6 +145,3 @@ class LatestCalculatedTSQMIBadgeViewSetTest(APITestCaseExpanded):
         response = self.client.get(self._get_badge_url())
         content = response.content.decode()
         self.assertIn('>A<', content)
-
-
-

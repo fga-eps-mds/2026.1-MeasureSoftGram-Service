@@ -1,0 +1,164 @@
+{
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 60,
+            "lineWidth": 1
+          },
+          "max": 1,
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "bucketOffset": 0,
+        "bucketSize": 0.05,
+        "combine": false,
+        "fillOpacity": 60,
+        "gradientMode": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "measuresoftgram-db"
+          },
+          "format": "table",
+          "rawSql": "SELECT value FROM tsqmi_tsqmi ORDER BY value",
+          "refId": "A"
+        }
+      ],
+      "title": "Histograma de Valores TSQMI (todos os repositórios)",
+      "type": "histogram"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 60,
+            "lineWidth": 1
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "bucketOffset": 0,
+        "bucketSize": 10,
+        "combine": false,
+        "fillOpacity": 60,
+        "gradientMode": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "measuresoftgram-db"
+          },
+          "format": "table",
+          "rawSql": "SELECT value FROM metrics_collectedmetric WHERE metric_id IN (SELECT id FROM metrics_supportedmetric WHERE metric_type = 'FLOAT') AND qualifier = 'FIL' ORDER BY value",
+          "refId": "A"
+        }
+      ],
+      "title": "Distribuição de Métricas Coletadas por Valor (FLOAT)",
+      "type": "histogram"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "measuresoftgram-db"
+          },
+          "format": "table",
+          "rawSql": "SELECT r.name AS \"Repositório\", ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY t.value)::numeric,4) AS \"P25\", ROUND(PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY t.value)::numeric,4) AS \"Mediana (P50)\", ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY t.value)::numeric,4) AS \"P75\", ROUND((PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY t.value) - PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY t.value))::numeric,4) AS \"IQR\", ROUND(AVG(t.value)::numeric,4) AS \"Média\", ROUND(STDDEV(t.value)::numeric,4) AS \"Desvio Padrão\", ROUND(MIN(t.value)::numeric,4) AS \"Mínimo\", ROUND(MAX(t.value)::numeric,4) AS \"Máximo\" FROM tsqmi_tsqmi t JOIN organizations_repository r ON r.id = t.repository_id GROUP BY r.name ORDER BY \"Mediana (P50)\" DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Percentis do TSQMI por Repositório",
+      "type": "table"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 4,
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "measuresoftgram-db"
+          },
+          "format": "table",
+          "rawSql": "SELECT sc.name AS \"Característica\", ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY cc.value)::numeric,4) AS \"P25\", ROUND(PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY cc.value)::numeric,4) AS \"Mediana\", ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY cc.value)::numeric,4) AS \"P75\", ROUND((PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY cc.value) - PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY cc.value))::numeric,4) AS \"IQR\", ROUND(AVG(cc.value)::numeric,4) AS \"Média\", ROUND(STDDEV(cc.value)::numeric,4) AS \"Desvio Padrão\" FROM characteristics_calculatedcharacteristic cc JOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id GROUP BY sc.name ORDER BY \"Mediana\" DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Estatísticas das Características",
+      "type": "table"
+    }
+  ],
+  "tags": [
+    "measuresoftgram"
+  ],
+  "time": {
+    "from": "now-180d",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "5. Distribuição Estatística",
+  "uid": "2c7ac020-f0a2-4864-9218-6ad72c282a76"
+}

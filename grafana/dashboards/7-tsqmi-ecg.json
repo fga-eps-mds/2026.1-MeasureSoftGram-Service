@@ -1,0 +1,181 @@
+{
+  "annotations": [
+    {
+      "kind": "AnnotationQuery",
+      "spec": {
+        "builtIn": true,
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "query": {
+          "datasource": {
+            "name": "-- Grafana --"
+          },
+          "group": "grafana",
+          "kind": "DataQuery",
+          "spec": {},
+          "version": "v0"
+        }
+      }
+    }
+  ],
+  "cursorSync": "Crosshair",
+  "editable": true,
+  "elements": {
+    "panel-1": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "measuresoftgram-db"
+                    },
+                    "group": "grafana-postgresql-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "editorMode": "code",
+                      "format": "table",
+                      "rawQuery": true,
+                      "rawSql": "SELECT\n  r.name as name,\n  t.created_at as datetime,\n  t.value as tsqmi\nFROM tsqmi_tsqmi t\nJOIN organizations_repository r ON r.id = t.repository_id\nORDER BY t.created_at",
+                      "sql": {
+                        "columns": [
+                          {
+                            "parameters": [],
+                            "type": "function"
+                          }
+                        ],
+                        "groupBy": [
+                          {
+                            "property": {
+                              "type": "string"
+                            },
+                            "type": "groupBy"
+                          }
+                        ],
+                        "limit": 50
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "CLI"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 1,
+        "links": [],
+        "title": "Gráfico 3 - Gráfico de pulso TSQMI",
+        "vizConfig": {
+          "group": "volkovlabs-echarts-panel",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {},
+              "overrides": []
+            },
+            "options": {
+              "baidu": {
+                "callback": "bmapReady",
+                "key": ""
+              },
+              "code": {
+                "language": "javascript",
+                "showLineNumbers": false,
+                "showMiniMap": false
+              },
+              "content": "// Dashboard 7 — TSQMI com Pulso ECG\n// Implementação limpa e funcional\n\nconst REPO_META = {\n  cli:     { label: 'CLI',     color: '#1D9E75' },\n  core:    { label: 'Core',    color: '#378ADD' },\n  service: { label: 'Service', color: '#D85A30' },\n  front:   { label: 'Front',   color: '#D4537E' }\n};\n\n// Função msgPulse - Gera pulso ECG para uma transição\nfunction msgPulse(valueA, valueB, timeA, timeB) {\n  const SPS = 12; // 12 pontos por transição\n  const points = [];\n  const delta = valueB - valueA;\n  const peakAmplitude = delta * 2.2; // Amplitude do pico 2.2x maior que delta\n  \n  // Usar intervalo de tempo fixo de 2 horas entre pontos para garantir visibilidade\n  const TWO_HOURS = 2 * 60 * 60 * 1000;\n  const timeStep = TWO_HOURS;\n\n  for (let i = 0; i < SPS; i++) {\n    const t = i / SPS;\n    let v;\n\n    if (t < 0.30) {\n      // Base inicial - 30% do tempo no valor inicial\n      v = valueA;\n    } else if (t < 0.42) {\n      // Subida - 12% do tempo subindo ao pico\n      const p = (t - 0.30) / 0.12;\n      v = valueA + peakAmplitude * Math.sin(p * Math.PI * 0.5);\n    } else if (t < 0.56) {\n      // Descida - 14% do tempo descendo do pico\n      const p = (t - 0.42) / 0.14;\n      v = valueA + peakAmplitude * (1 - p);\n    } else if (t < 0.68) {\n      // Onda de retorno - 12% do tempo com pequena oscilação abaixo do novo valor\n      const p = (t - 0.56) / 0.12;\n      v = valueB - (delta * 0.15) * Math.sin(p * Math.PI);\n    } else {\n      // Nova base - 32% do tempo no novo valor\n      v = valueB;\n    }\n\n    const interpTime = timeA + (timeStep * i);\n    points.push([interpTime, v]);\n  }\n\n  return points;\n}\n\n// Processar dados do PostgreSQL\nconst repoData = {};\ndata.series.forEach(series => {\n  const refId = series.refId.toLowerCase();\n  if (REPO_META[refId]) {\n    const timeField = series.fields.find(f => f.name === 'time');\n    const valueField = series.fields.find(f => f.name === series.refId);\n\n    if (timeField && valueField && valueField.values.length > 0) {\n      repoData[refId] = {\n        label: REPO_META[refId].label,\n        color: REPO_META[refId].color,\n        times: timeField.values,\n        values: valueField.values\n      };\n    }\n  }\n});\n\nconst repos = Object.keys(repoData);\nif (repos.length === 0) {\n  return {\n    title: {\n      text: 'Aguardando dados...',\n      left: 'center',\n      top: 'center',\n      textStyle: { fontSize: 14, color: '#888' }\n    }\n  };\n}\n\nconst firstRepo = repos[0];\nconst N = repoData[firstRepo].values.length;\n\n// Releases\nconst releases = [\n  { label: 'R1', dateIndex: 0 },\n  { label: 'R2', dateIndex: Math.floor(N / 2) },\n  { label: 'RN', dateIndex: N - 1 }\n];\n\n// Criar séries com pulso ECG\nconst series = repos.map(repoKey => {\n  const repo = repoData[repoKey];\n  const values = repo.values;\n  const times = repo.times;\n\n  // Detectar transições\n  const transitions = [];\n  for (let i = 0; i < values.length - 1; i++) {\n    if (values[i] !== values[i + 1]) {\n      transitions.push({\n        startIdx: i,\n        endIdx: i + 1,\n        valueA: values[i],\n        valueB: values[i + 1],\n        timeA: times[i],\n        timeB: times[i + 1]\n      });\n    }\n  }\n\n  // Criar índices de transição para pular na linha plana\n  const transitionSet = new Set();\n  transitions.forEach(t => {\n    transitionSet.add(t.startIdx);\n    transitionSet.add(t.endIdx);\n  });\n\n  // Construir dados finais\n  const dataPoints = [];\n\n  // Adicionar pontos da linha plana (exceto transições)\n  for (let i = 0; i < values.length; i++) {\n    if (!transitionSet.has(i)) {\n      dataPoints.push([times[i], values[i]]);\n    }\n  }\n\n  // Adicionar pulsos ECG\n  transitions.forEach(trans => {\n    const pulsePoints = msgPulse(trans.valueA, trans.valueB, trans.timeA, trans.timeB);\n    dataPoints.push(...pulsePoints);\n    \n    // DEBUG: Log da primeira transição do Core\n    if (repo.label === 'Core' && transitions.indexOf(trans) === 0) {\n      console.log('DEBUG Core - Primeira transição:');\n      console.log('  valueA:', trans.valueA, 'valueB:', trans.valueB);\n      console.log('  timeA:', new Date(trans.timeA));\n      console.log('  timeB:', new Date(trans.timeB));\n      console.log('  Pontos gerados:', pulsePoints.length);\n      pulsePoints.forEach((pt, idx) => {\n        console.log('    [' + idx + ']', new Date(pt[0]).toISOString(), 'valor:', pt[1].toFixed(4));\n      });\n    }\n  });\n\n  // Ordenar por timestamp\n  dataPoints.sort((a, b) => a[0] - b[0]);\n\n  return {\n    name: repo.label,\n    type: 'line',\n    smooth: false,\n    symbol: 'circle',\n    symbolSize: 4,\n    showSymbol: true,\n    sampling: 'none',\n    connectNulls: false,\n    lineStyle: {\n      color: repo.color,\n      width: 2,\n      type: 'solid'\n    },\n    itemStyle: {\n      color: repo.color\n    },\n    data: dataPoints,\n    markLine: {\n      silent: true,\n      symbol: 'none',\n      data: releases.map(rel => ({\n        xAxis: times[rel.dateIndex],\n        label: {\n          formatter: rel.label,\n          position: 'insideStartTop',\n          fontSize: 9,\n          fontWeight: 'bold',\n          color: '#BA7517'\n        },\n        lineStyle: {\n          color: '#BA7517',\n          type: 'dashed',\n          width: 1\n        }\n      }))\n    },\n    markPoint: {\n      symbol: 'circle',\n      symbolSize: 6,\n      data: releases.map(rel => ({\n        coord: [times[rel.dateIndex], values[rel.dateIndex]],\n        itemStyle: { color: repo.color }\n      }))\n    }\n  };\n});\n\nconst isDark = theme.isDark;\nconst textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';\nconst gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';\n\nreturn {\n  backgroundColor: 'transparent',\n  legend: {\n    data: repos.map(k => repoData[k].label),\n    textStyle: { color: textColor, fontSize: 11 },\n    bottom: 0\n  },\n  tooltip: {\n    trigger: 'axis',\n    formatter: params => {\n      if (!params || params.length === 0) return '';\n\n      const time = params[0].data[0];\n      const dt = new Date(time).toLocaleString('pt-BR');\n\n      let html = '<b>' + dt + '</b>';\n\n      params.forEach(p => {\n        const val = p.data[1];\n        html += '<br/><span style=\"color:' + p.color + '\">■</span> ' + p.seriesName + ': <b>' + val.toFixed(4) + '</b>';\n      });\n\n      return html;\n    }\n  },\n  grid: { top: 20, bottom: 50, left: 50, right: 20 },\n  xAxis: {\n    type: 'time',\n    axisLabel: {\n      color: textColor,\n      fontSize: 10,\n      formatter: function(value) {\n        const d = new Date(value);\n        return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');\n      }\n    },\n    splitLine: { show: false },\n    axisLine: { lineStyle: { color: gridColor } }\n  },\n  yAxis: {\n    type: 'value',\n    scale: true,\n    axisLabel: {\n      color: textColor,\n      fontSize: 9,\n      formatter: v => v.toFixed(3)\n    },\n    splitLine: { lineStyle: { color: gridColor } }\n  },\n  series\n};",
+              "editor": {
+                "format": "auto"
+              },
+              "editorMode": "code",
+              "gaode": {
+                "key": "",
+                "plugin": "AMap.Scale,AMap.ToolBar"
+              },
+              "getOption": "// 1. Dicionário de Metadados\nconst REPO_META = {\n  cli: { label: 'CLI', color: '#1D9E75' },\n  core: { label: 'Core', color: '#378ADD' },\n  service: { label: 'Service', color: '#D85A30' },\n  front: { label: 'Front', color: '#D4537E' },\n  action: { label: 'Action', color: '#BA7517' },\n  ai: { label: 'AI', color: '#7F77DD' },\n  parser: { label: 'Parser', color: '#888780' },\n};\n\n// Função de resolução para nomes de repositórios longos\nfunction getMetaConfig(rawName) {\n  const normalizedName = String(rawName).toLowerCase();\n  for (const [key, meta] of Object.entries(REPO_META)) {\n    if (normalizedName.includes(key)) return meta;\n  }\n  return { label: rawName, color: '#888780' };\n}\n\n// 2. Extração de Dados\nconst frame = context.panel.data.series[0];\nconst names = frame.fields.find(f => f.name === 'name').values.buffer || frame.fields.find(f => f.name === 'name').values;\nconst datetimes = frame.fields.find(f => f.name === 'datetime').values.buffer || frame.fields.find(f => f.name === 'datetime').values;\nconst tsqmis = frame.fields.find(f => f.name === 'tsqmi').values.buffer || frame.fields.find(f => f.name === 'tsqmi').values;\n\n// 3. Agrupamento\nconst groupedData = {};\nfor (let i = 0; i < names.length; i++) {\n  const key = names[i];\n  if (!groupedData[key]) {\n    groupedData[key] = { datetimes: [], tsqmi: [] };\n  }\n  groupedData[key].datetimes.push(datetimes[i]);\n  groupedData[key].tsqmi.push(tsqmis[i]);\n}\n\n// 4. Mapeamento final com aplicação de cor\nconst repoSeries = Object.keys(groupedData).map(key => {\n  const meta = getMetaConfig(key);\n  return {\n    key,\n    label: meta.label,\n    color: meta.color,\n    datetimes: groupedData[key].datetimes,\n    tsqmi: groupedData[key].tsqmi,\n  };\n});\n\nconst releases = [\n  { label: 'R1', dateIndex: 0 },\n  { label: 'R2', dateIndex: 5 },\n  { label: 'RN', dateIndex: repoSeries[0]?.datetimes.length - 1 },\n];\n\nfunction msgPulse(scores, idxList) {\n  const SPS = 60;\n  const pts = [];\n  for (let ii = 0; ii < idxList.length - 1; ii++) {\n    const a = scores[idxList[ii]], b = scores[idxList[ii + 1]];\n    const delta = b - a, pk = delta * 2.2;\n    for (let s = 0; s < SPS; s++) {\n      const t = s / SPS;\n      let v;\n      if (t < 0.30) { v = a; }\n      else if (t < 0.42) { const p = (t - 0.30) / 0.12; v = a + pk * Math.sin(p * Math.PI * 0.5); }\n      else if (t < 0.56) { const p = (t - 0.42) / 0.14; v = a + pk * (1 - p); }\n      else if (t < 0.68) { const p = (t - 0.56) / 0.12; v = b - delta * 0.15 * Math.sin(p * Math.PI); }\n      else { v = b; }\n      pts.push(Math.max(0.01, Math.min(0.99, v)));\n    }\n  }\n  pts.push(Math.max(0.01, Math.min(0.99, scores[idxList[idxList.length - 1]])));\n  return pts;\n}\n\nconst N = repoSeries[0]?.datetimes.length || 0;\nconst idxList = Array.from({ length: N }, (_, i) => i);\nconst SPS = 60;\n\nconst isDark = context.grafana.theme.isDark;\nconst textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';\nconst gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';\n\nconst xLabels = [];\nidxList.forEach((idx, ii) => {\n  if (ii < idxList.length - 1) for (let s = 0; s < SPS; s++) xLabels.push(repoSeries[0].datetimes[idx]);\n  else xLabels.push(repoSeries[0].datetimes[idx]);\n});\n\n// 5. Configuração das Séries ECharts\nconst series = repoSeries.map(r => ({\n  name: r.label,\n  type: 'line',\n  smooth: false,\n  symbol: 'none',\n  // A propriedade itemStyle obriga a legenda a espelhar a cor customizada da linha\n  itemStyle: {\n    color: r.color,\n  },\n  lineStyle: {\n    color: r.color,\n    width: 1.8,\n    type: 'solid',\n  },\n  data: msgPulse(r.tsqmi, idxList),\n  markLine: {\n    silent: true, symbol: 'none',\n    data: releases.map(rel => ({\n      xAxis: rel.dateIndex * SPS,\n      label: { formatter: rel.label, position: 'insideStartTop', fontSize: 9, fontWeight: 'bold', color: '#BA7517' },\n      lineStyle: { color: '#BA7517', type: 'dashed', width: 1 },\n    })),\n  },\n  markPoint: {\n    symbol: 'circle', symbolSize: 7,\n    data: releases.map(rel => ({\n      coord: [rel.dateIndex * SPS, r.tsqmi[rel.dateIndex]],\n      itemStyle: { color: r.color },\n    })),\n  },\n}));\n\nconst option = {\n  backgroundColor: 'transparent',\n  legend: {\n    data: repoSeries.map(r => r.label),\n    textStyle: { color: textColor, fontSize: 11 },\n    bottom: 0,\n  },\n  tooltip: {\n    trigger: 'axis',\n    formatter: params => {\n      const measureIdx = Math.min(Math.floor(params[0].dataIndex / SPS), N - 1);\n      const dt = repoSeries[0].datetimes[measureIdx];\n      const rel = releases.find(r => r.dateIndex === measureIdx);\n      let html = `<b>${dt}</b>`;\n      if (rel) html += `<br/><span style=\"color:#BA7517\">● ${rel.label}</span>`;\n      repoSeries.forEach(r => {\n        const v = r.tsqmi[measureIdx];\n        const prev = measureIdx > 0 ? r.tsqmi[measureIdx - 1] : null;\n        const delta = prev !== null ? v - prev : null;\n        const col = delta !== null ? (delta >= 0 ? '#1D9E75' : '#E24B4A') : textColor;\n        html += `<br/><span style=\"color:${r.color}\">■</span> ${r.label}: <b>${v.toFixed(2)}</b>`;\n        if (delta !== null) html += ` <span style=\"color:${col}\">${delta >= 0 ? '+' : ''}${delta.toFixed(2)}</span>`;\n      });\n      return html;\n    },\n  },\n  grid: { top: 20, bottom: 50, left: 50, right: 20 },\n  xAxis: {\n    type: 'category',\n    data: xLabels,\n    axisLabel: {\n      color: textColor, fontSize: 10,\n      interval: SPS * Math.floor(N / 5) - 1,\n      formatter: v => v ? v.slice(5, 10).replace('-', '/') : '',\n    },\n    splitLine: { show: false },\n    axisLine: { lineStyle: { color: gridColor } },\n  },\n  yAxis: {\n    type: 'value',\n    min: 0, max: 1, interval: 0.25,\n    axisLabel: { color: textColor, fontSize: 9, formatter: v => v.toFixed(2) },\n    splitLine: { lineStyle: { color: gridColor } },\n  },\n  series,\n};\n\nreturn option;",
+              "google": {
+                "callback": "gmapReady",
+                "key": ""
+              },
+              "map": "none",
+              "mode": "code",
+              "renderer": "canvas",
+              "themeEditor": {
+                "config": "{}",
+                "name": "default"
+              },
+              "visualEditor": {
+                "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n}\n",
+                "dataset": [],
+                "series": []
+              }
+            }
+          },
+          "version": "7.2.5"
+        }
+      }
+    }
+  },
+  "layout": {
+    "kind": "GridLayout",
+    "spec": {
+      "items": [
+        {
+          "kind": "GridLayoutItem",
+          "spec": {
+            "element": {
+              "kind": "ElementReference",
+              "name": "panel-1"
+            },
+            "height": 14,
+            "width": 24,
+            "x": 0,
+            "y": 0
+          }
+        }
+      ]
+    }
+  },
+  "links": [],
+  "liveNow": false,
+  "preload": false,
+  "tags": [
+    "measuresoftgram",
+    "tsqmi",
+    "ecg"
+  ],
+  "timeSettings": {
+    "autoRefresh": "",
+    "autoRefreshIntervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "fiscalYearStartMonth": 0,
+    "from": "1966-08-18T16:28:24.794Z",
+    "hideTimepicker": false,
+    "timezone": "browser",
+    "to": "2086-04-01T08:28:24.794Z"
+  },
+  "title": "Dashboard de Pulso",
+  "variables": []
+}

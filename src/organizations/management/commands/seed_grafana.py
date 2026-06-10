@@ -277,20 +277,28 @@ class Command(BaseCommand):
         else:
             existing = TSQMI.objects.filter(repository=repo).count()
 
-        if existing >= len(timestamps):
+        # IMPORTANTE: Usar apenas 10 medições para melhor visualização do pulso ECG
+        # Gera 10 timestamps espaçados uniformemente ao longo do período
+        TSQMI_MEASUREMENTS = 10
+
+        if existing >= TSQMI_MEASUREMENTS:
             self.stdout.write(f'    TSQMI: já tem {existing} registros, pulando')
             return
 
+        # Selecionar 10 timestamps espaçados uniformemente
+        step = max(1, len(timestamps) // TSQMI_MEASUREMENTS)
+        selected_timestamps = [timestamps[i * step] for i in range(TSQMI_MEASUREMENTS)]
+
         to_create = []
-        for i, ts in enumerate(timestamps):
+        for i, ts in enumerate(selected_timestamps):
             to_create.append(TSQMI(
-                value=_trend_value(i, profile),
+                value=_trend_value(i * step, profile),
                 created_at=ts,
                 repository=repo,
             ))
 
         TSQMI.objects.bulk_create(to_create, batch_size=500)
-        self.stdout.write(f'    TSQMI: +{len(to_create)}')
+        self.stdout.write(f'    TSQMI: +{len(to_create)} (10 medições para pulso ECG)')
 
     # ------------------------------------------------------------------
     # Goals e Releases

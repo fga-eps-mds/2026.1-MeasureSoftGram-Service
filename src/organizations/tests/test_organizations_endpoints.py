@@ -192,3 +192,66 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, 400)
+
+
+class OrganizationPermissionIsolationTestCase(APITestCaseExpanded):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='test-user-1', password='test-pass-1'
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username='test-user-2', password='test-pass-2'
+        )
+
+        self.client = APIClient()
+        self.client.force_authenticate(
+            self.user, token=Token.objects.create(user=self.user)
+        )
+
+    def test_user_cannot_see_other_users_organization(self):
+        org = self.get_organization(name='Other Org', add_user=False)
+        org.members.add(self.other_user)
+        org.admin = self.other_user
+        org.save()
+
+        url = reverse('organization-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        results = response.json()['results']
+        self.assertEqual(len(results), 0)
+
+        detail_url = reverse('organization-detail', args=[org.id])
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_user_cannot_see_other_users_product(self):
+        org = self.get_organization(name='Other Org', add_user=False)
+        org.members.add(self.other_user)
+        org.admin = self.other_user
+        org.save()
+        product = self.get_product(org, name='Other Product')
+
+        url = reverse('product-list', kwargs={'organization_pk': org.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        detail_url = reverse('product-detail', kwargs={'organization_pk': org.id, 'pk': product.id})
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_user_cannot_see_other_users_repository(self):
+        org = self.get_organization(name='Other Org', add_user=False)
+        org.members.add(self.other_user)
+        org.admin = self.other_user
+        org.save()
+        product = self.get_product(org, name='Other Product')
+        repo = self.get_repository(product, name='Other Repo')
+
+        url = reverse('repository-list', kwargs={'organization_pk': org.id, 'product_pk': product.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        detail_url = reverse('repository-detail', kwargs={'organization_pk': org.id, 'product_pk': product.id, 'pk': repo.id})
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 404)
+

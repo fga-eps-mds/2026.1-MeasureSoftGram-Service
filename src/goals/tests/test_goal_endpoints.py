@@ -46,7 +46,7 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
         create_supported_characteristics(characteristics)
         characteristics_keys = [item['key'] for item in characteristics]
 
-        self.org = self.get_organization()
+        self.org = self.get_organization(add_user=False)
         self.product = self.get_product(self.org)
 
         create_a_releaseconfig(
@@ -63,6 +63,11 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
         self.password = 'testpass'
         self.user.set_password(self.password)
         self.user.save()
+
+        self.org.members.add(self.user)
+        self.org.admin = self.user
+        self.org.save()
+
         self.client.credentials(
             HTTP_AUTHORIZATION='Token '
             + Token.objects.create(user=self.user).key

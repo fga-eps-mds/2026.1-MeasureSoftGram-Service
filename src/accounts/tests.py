@@ -276,3 +276,35 @@ class AccountsViews(APITestCaseExpanded):
         url = reverse('user-repos')
         response = self.client.get(url, {'code': 'any_code'}, format='json')
         self.assertEqual(response.status_code, 401)
+
+    @patch('accounts.views.requests.get')
+    def test_github_organizations_success(self, mock_get):
+        self.user.github_access_token = 'gh_token_123'
+        self.user.save()
+
+        def side_effect(url, headers=None):
+            resp = MagicMock()
+            resp.status_code = 200
+            if "api.github.com/user/orgs" in url:
+                resp.json.return_value = [
+                    {'id': 456, 'login': 'org2', 'avatar_url': 'http://avatar2', 'description': 'desc2'}
+                ]
+            else:
+                resp.json.return_value = {
+                    'id': 123, 'login': 'test-user', 'avatar_url': 'http://avatar1', 'bio': 'desc1'
+                }
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('github-organizations')
+        response = self.client.get(url, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]['github_org_name'], 'test-user')
+        self.assertEqual(response.json()[1]['github_org_name'], 'org2')

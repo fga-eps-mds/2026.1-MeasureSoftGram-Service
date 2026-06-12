@@ -15,6 +15,8 @@ Cenário 3 prova que o cálculo deixou de depender da janela de 20min em
 metrics/models.py:113. Após o refactor "calcula em memória", a função
 SupportedMetric.get_latest_metric_value não é consultada durante o POST.
 """
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
 from unittest.mock import patch
 
 from freezegun import freeze_time
@@ -109,6 +111,13 @@ def _full_payload():
 @freeze_time("2024-09-08 20:00:00")
 class MathModelAtomicitySmokeTest(APITestCaseExpanded):
     def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='test-user', password='test-pass'
+        )
+        self.client.force_authenticate(
+            self.user, token=Token.objects.create(user=self.user)
+        )
+
         self.org = self.get_organization()
         self.product = self.get_product(self.org)
         self.repository = self.get_repository(self.product)

@@ -3,28 +3,22 @@ from rest_framework.response import Response
 
 from math_model.services import MathModelServices
 from release_configuration.serializers import ReleaseConfigurationSerializer
-from utils import utils
+from organizations.mixins import UserScopedMixin
 from utils.exceptions import CalculateModelException
 
 from .utils import parse_release_configuration
 
 
 class CalculateMathModelViewSet(
+    UserScopedMixin,
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
     """ViewSet para cálculo do modelo matemático do MeasureSoftGram."""
 
     def create(self, request, *args, **kwargs):
-        repository = utils.get_repository(
-            self.kwargs['organization_pk'],
-            self.kwargs['product_pk'],
-            self.kwargs['repository_pk'],
-        )
-        product = utils.get_product(
-            self.kwargs['organization_pk'],
-            self.kwargs['product_pk'],
-        )
+        repository = self.get_repository()
+        product = self.get_product()
         services = MathModelServices(repository, product)
 
         release_configuration = product.release_configuration.first()

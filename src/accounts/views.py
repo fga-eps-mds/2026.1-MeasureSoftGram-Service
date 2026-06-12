@@ -146,3 +146,62 @@ class UserRepos(viewsets.ReadOnlyModelViewSet):
         }
 
         return Response(formatted_response, status=status.HTTP_200_OK)
+
+
+class GitHubOrganizationsViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        user = request.user
+        token = user.github_access_token
+        if not token:
+            from allauth.socialaccount.models import SocialToken
+            st = SocialToken.objects.filter(account__user=user, account__provider='github').first()
+            if st:
+                token = st.token
+                user.github_access_token = token
+                user.save()
+            else:
+                return Response(
+                    {"error": "GitHub account not linked or access token missing."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        headers = {"Authorization": f"token {token}", "Accept": "application/json"}
+        results = []
+
+        # 1. Fetch user's own profile (personal space)
+        r_user = requests.get("https://api.github.com/user", headers=headers)
+        if r_user.status_code == 200:
+            user_data = r_user.json()
+            results.append({
+                "github_org_id": user_data.get("id"),
+                "github_org_name": user_data.get("login"),
+                "avatar_url": user_data.get("avatar_url"),
+                "description": "Personal account",
+            })
+
+        # 2. Fetch user's organizations
+        r_orgs = requests.get("https://api.github.com/user/orgs", headers=headers)
+        if r_orgs.status_code == 200:
+            orgs = r_orgs.json()
+            for org in orgs:
+                if any(x["github_org_id"] == org.get("id") for x in results):
+                    continue
+                results.append({
+                    "github_org_id": org.get("id"),
+                    "github_org_name": org.get("login"),
+                    "avatar_url": org.get("avatar_url"),
+                    "description": org.get("description"),
+                })
+        else:
+            # If fetching orgs failed but user fetched successfully, return at least user
+            if not results:
+                return Response(
+                    {"error": "Failed to fetch organizations from GitHub", "details": r_orgs.json()},
+                    status=r_orgs.status_code
+                )
+
+        return Response(results, status=status.HTTP_200_OK)
+
+

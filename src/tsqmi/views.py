@@ -11,6 +11,7 @@ from characteristics.models import SupportedCharacteristic
 from measures.models import SupportedMeasure
 from metrics.models import SupportedMetric
 from organizations.models import Product, Repository
+from organizations.mixins import UserScopedMixin
 from tsqmi.models import TSQMI
 from tsqmi.serializers import (
     TSQMICalculationRequestSerializer,
@@ -21,18 +22,11 @@ from django.http import HttpResponse
 
 
 class LatestCalculatedTSQMIViewSet(
+    UserScopedMixin,
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
     serializer_class = TSQMISerializer
-
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
 
     def get_queryset(self):
         repository = self.get_repository()
@@ -128,6 +122,7 @@ class LatestCalculatedTSQMIBadgeViewSet(
 
 
 class CalculatedTSQMIHistoryModelViewSet(
+    UserScopedMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
@@ -138,19 +133,7 @@ class CalculatedTSQMIHistoryModelViewSet(
 
     serializer_class = TSQMISerializer
 
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
-
     def get_queryset(self):
-        repository = get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
+        repository = self.get_repository()
         return repository.calculated_tsqmis.all().reverse()
+

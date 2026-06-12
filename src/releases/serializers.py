@@ -43,12 +43,13 @@ class ReleaseSerializer(serializers.ModelSerializer):
                 )
 
     def create(self, validated_data):
+        view = self.context['view']
+        if hasattr(view, 'get_product'):
+            product = view.get_product()
+        else:
+            product = Product.objects.get(id=view.kwargs['product_pk'])
 
-        release = Release.objects.all().filter(
-            product=Product.objects.get(
-                id=self.context['view'].kwargs['product_pk']
-            )
-        )
+        release = Release.objects.all().filter(product=product)
         self.verify_fields_releases(
             release,
             validated_data['start_at'],
@@ -57,19 +58,19 @@ class ReleaseSerializer(serializers.ModelSerializer):
         )
 
         validated_data['created_by'] = CustomUser.objects.get(
-            id=self.context['view'].request.user.id
+            id=view.request.user.id
         )
-        validated_data['product'] = Product.objects.get(
-            id=self.context['view'].kwargs['product_pk']
-        )
+        validated_data['product'] = product
         return Release.objects.create(**validated_data)
 
     def update(self, validated_data):
-        release = Release.objects.all().filter(
-            product=Product.objects.get(
-                id=self.context['view'].kwargs['product_pk']
-            )
-        )
+        view = self.context['view']
+        if hasattr(view, 'get_product'):
+            product = view.get_product()
+        else:
+            product = Product.objects.get(id=view.kwargs['product_pk'])
+
+        release = Release.objects.all().filter(product=product)
         self.verify_fields_releases(
             release,
             validated_data['start_at'],

@@ -9,7 +9,8 @@ from accounts.views import (
     RetrieveAccountViewSet,
     UserListViewSet,
     UserRepos,
-    GitHubOrganizationsViewSet
+    GitHubOrganizationsViewSet,
+    GithubValidateView
 )
 
 urlpatterns = [
@@ -41,6 +42,11 @@ urlpatterns = [
                     r'^github/login/$',
                     GithubLoginViewSet.as_view(),
                     name='github-login',
+                ),
+                re_path(
+                    r'^github/validate/$',
+                    GithubValidateView.as_view(),
+                    name='github-validate',
                 ),
                 re_path(
                     r'^access-token/$',

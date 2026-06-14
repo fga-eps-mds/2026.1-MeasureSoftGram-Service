@@ -308,3 +308,53 @@ class AccountsViews(APITestCaseExpanded):
         self.assertEqual(len(response.json()), 2)
         self.assertEqual(response.json()[0]['github_org_name'], 'test-user')
         self.assertEqual(response.json()[1]['github_org_name'], 'org2')
+
+    @patch('accounts.views.requests.post')
+    def test_github_validate_success(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 404  # Credenciais válidas, token dummy não encontrado
+        mock_post.return_value = mock_response
+
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
+            
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['valid'])
+
+    @patch('accounts.views.requests.post')
+    def test_github_validate_bad_credentials(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 401  # Bad credentials
+        mock_post.return_value = mock_response
+
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
+            
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['valid'])
+        self.assertEqual(response.json()['reason'], 'Invalid GitHub Client ID or Client Secret')
+
+    def test_github_validate_mismatch(self):
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'backend_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'frontend_client_id'}, format='json')
+            
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['valid'])
+        self.assertEqual(response.json()['reason'], 'Client ID mismatch between frontend and backend')
+
+    def test_github_validate_not_configured(self):
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', ''), \
+             patch('django.conf.settings.GITHUB_SECRET', ''):
+            response = self.client.post(url, {'client_id': 'any_id'}, format='json')
+            
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['valid'])
+        self.assertEqual(response.json()['reason'], 'Backend GitHub credentials are not configured')
+

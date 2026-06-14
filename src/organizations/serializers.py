@@ -290,8 +290,32 @@ class RepositorySerializer(serializers.HyperlinkedModelSerializer):
                     'The URL must start with http or https.'
                 )
 
+            headers = {}
+            check_url = value
+            if "github.com" in parsed_url.netloc:
+                parts = [p for p in parsed_url.path.split('/') if p]
+                if len(parts) >= 2:
+                    owner, repo = parts[0], parts[1]
+                    check_url = f"https://api.github.com/repos/{owner}/{repo}"
+                    headers["Accept"] = "application/vnd.github.v3+json"
+
+                    request = self.context.get('request')
+                    if request and request.user and request.user.is_authenticated:
+                        token = getattr(request.user, 'github_access_token', None)
+                        if not token:
+                            from allauth.socialaccount.models import SocialToken
+                            st = SocialToken.objects.filter(
+                                account__user=request.user, account__provider='github'
+                            ).first()
+                            if st:
+                                token = st.token
+                                request.user.github_access_token = token
+                                request.user.save()
+                        if token:
+                            headers["Authorization"] = f"token {token}"
+
             try:
-                response = requests.head(value, timeout=5)
+                response = requests.head(check_url, headers=headers, timeout=5)
                 if response.status_code >= 400:
                     raise serializers.ValidationError(
                         "The repository's URL is not accessible."

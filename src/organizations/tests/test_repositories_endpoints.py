@@ -138,6 +138,93 @@ class RepositoriesViewsSetCase(APITestCaseExpanded):
             "The repository's URL is not accessible.", response.data['url']
         )
 
+    @patch('organizations.serializers.requests.head')
+    def test_create_github_repository_authenticated(self, mock_head):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_head.return_value = mock_response
+
+        # Set github token for user
+        self.user.github_access_token = 'my-github-token'
+        self.user.save()
+
+        data = {
+            'name': 'Test GitHub Repository',
+            'description': 'Test Description',
+            'url': 'https://github.com/my-org/private-repo',
+        }
+        org = self.get_organization()
+        product = self.get_product(org)
+        url = reverse('repository-list', args=[org.id, product.id])
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        mock_head.assert_called_once_with(
+            'https://api.github.com/repos/my-org/private-repo',
+            headers={
+                'Accept': 'application/vnd.github.v3+json',
+                'Authorization': 'token my-github-token'
+            },
+            timeout=5
+        )
+
+    @patch('organizations.serializers.requests.head')
+    def test_create_github_repository_authenticated_via_social_token(self, mock_head):
+        from allauth.socialaccount.models import SocialAccount, SocialToken, SocialApp
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_head.return_value = mock_response
+
+        # Clear token on user object
+        self.user.github_access_token = None
+        self.user.save()
+
+        # Create SocialApp, SocialAccount and SocialToken
+        social_app = SocialApp.objects.create(
+            provider='github',
+            name='GitHub',
+            client_id='12345',
+            secret='54321',
+        )
+        social_account = SocialAccount.objects.create(
+            user=self.user,
+            provider='github',
+            uid='12345'
+        )
+        SocialToken.objects.create(
+            account=social_account,
+            app=social_app,
+            token='social-github-token'
+        )
+
+        data = {
+            'name': 'Test GitHub Repository 2',
+            'description': 'Test Description',
+            'url': 'https://github.com/my-org/private-repo-2',
+        }
+        org = self.get_organization()
+        product = self.get_product(org)
+        url = reverse('repository-list', args=[org.id, product.id])
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        mock_head.assert_called_once_with(
+            'https://api.github.com/repos/my-org/private-repo-2',
+            headers={
+                'Accept': 'application/vnd.github.v3+json',
+                'Authorization': 'token social-github-token'
+            },
+            timeout=5
+        )
+
+        # Check that the token was saved on the user model for future fast lookup
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.github_access_token, 'social-github-token')
+
     def test_if_existing_repositories_is_being_listed(self):
         org = self.get_organization()
         product = self.get_product(org)

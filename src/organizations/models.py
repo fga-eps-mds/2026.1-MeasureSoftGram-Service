@@ -129,6 +129,18 @@ class Repository(models.Model):
     def save(self, *args, **kwargs):
         self.key = slugify(self.name)
         self.key = f'{self.product.key}-{self.key}'
+
+        if self.platform == 'github' and self.url and not self.github_full_name:
+            from urllib.parse import urlparse
+            try:
+                parsed = urlparse(self.url)
+                if 'github.com' in parsed.netloc:
+                    parts = [p for p in parsed.path.split('/') if p]
+                    if len(parts) >= 2:
+                        self.github_full_name = f"{parts[0]}/{parts[1]}"
+            except Exception:
+                pass
+
         return super().save(*args, **kwargs)
 
     def __str__(self):

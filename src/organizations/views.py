@@ -70,7 +70,19 @@ class RepositoryViewSet(
     def perform_create(self, serializer):
         serializer.is_valid(raise_exception=True)
         product = self.get_product()
-        serializer.save(product=product)
+        repository = serializer.save(product=product)
+
+        # Trigger background onboarding if not running unit tests
+        from django.conf import settings
+        if not getattr(settings, 'TESTING', False):
+            import threading
+            from organizations.utils import onboard_repository_async
+            thread = threading.Thread(
+                target=onboard_repository_async,
+                args=(repository, self.request.user),
+                daemon=True
+            )
+            thread.start()
 
     def get_queryset(self):
         product = self.get_product()

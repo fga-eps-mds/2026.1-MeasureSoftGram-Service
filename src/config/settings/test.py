@@ -26,3 +26,5 @@ CREATE_FAKE_DATA = False
 
 # Logging silencioso em test.
 LOGGING["loggers"]["django"]["level"] = "WARNING"
+
+TESTING = True

@@ -1,0 +1,80 @@
+name: Deploy Prod (self-hosted)
+
+# Deploy de producao na box LAPPIS via runner self-hosted instalado nela.
+# A box so PUXA imagens buildadas no CI (docker-publish.yml), nao builda.
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Pull + up + smoke
+    runs-on: [self-hosted, msgram-prod]
+
+    env:
+      COMPOSE_FILE: deploy/docker-compose.prod.yml
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login no DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull das imagens
+        run: docker compose -f "$COMPOSE_FILE" pull
+
+      - name: Subir a stack
+        run: docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+
+      - name: Migrate (idempotente)
+        run: |
+          docker compose -f "$COMPOSE_FILE" exec -T service \
+            python manage.py migrate --noinput
+
+      - name: Smoke test
+        run: |
+          set -e
+          ok=0
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost/swagger/ >/dev/null; then
+              ok=1; break
+            fi
+            echo "swagger ainda nao respondeu (tentativa $i), aguardando..."
+            sleep 4
+          done
+          if [ "$ok" != "1" ]; then
+            echo "FALHA: /swagger/ nao respondeu 200"
+            exit 1
+          fi
+          echo "OK: /swagger/ 200"
+
+          # Rota viva da API: 401 (auth) ou 200 e sucesso; 000/502 e falha.
+          api_code=$(curl -s -o /dev/null -w '%{http_code}' \
+            http://localhost/api/v1/supported-metrics/ || echo 000)
+          echo "API /supported-metrics/ -> $api_code"
+          case "$api_code" in
+            200|401|403) echo "OK: API viva" ;;
+            *) echo "FALHA: API code $api_code"; exit 1 ;;
+          esac
+
+          # Front responde na raiz.
+          if curl -fsS http://localhost/ >/dev/null; then
+            echo "OK: Front 200"
+          else
+            echo "FALHA: Front nao respondeu na raiz"
+            exit 1
+          fi
+
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose -f "$COMPOSE_FILE" logs --tail=120

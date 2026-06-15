@@ -41,3 +41,10 @@ COPY --from=builder /app/.venv /app/.venv
 
 # Copiar código
 COPY src /src/
+
+# Garantir bit de execucao do entrypoint (necessario quando a imagem roda
+# por conta propria, ex: `docker compose pull` + up sem command no compose).
+RUN chmod +x /src/start_service.sh
+
+# Entrypoint default: migra, collectstatic e sobe gunicorn (ver script).
+CMD ["./start_service.sh"]

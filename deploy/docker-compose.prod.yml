@@ -29,9 +29,9 @@ services:
     container_name: msgram_db
     image: postgres:18-alpine
     volumes:
-      # pg18 usa PGDATA em .../data: montar o subdir /data, nao a raiz,
-      # senao os dados nao persistem corretamente entre `compose up`.
-      - service_postgres_data:/var/lib/postgresql/data
+      # postgres 18+ guarda os dados num subdir version-specific e exige o mount
+      # na raiz /var/lib/postgresql (a imagem rejeita o mount direto em /data).
+      - service_postgres_data:/var/lib/postgresql
     env_file:
       - ./env-vars/.postgres.env
     healthcheck:

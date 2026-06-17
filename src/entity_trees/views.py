@@ -62,4 +62,3 @@ class ReleaseConfigurationEntitiesRelationshipTreeViewSet(
         current_pre_config = product.release_configuration.first()
         entity_tree = pre_config_to_entity_tree(current_pre_config)
         return Response(entity_tree)
-

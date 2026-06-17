@@ -163,15 +163,24 @@ class ImportOrganizationViewSet(viewsets.ViewSet):
 
         r = requests.get(url_fetch, headers=headers)
         if r.status_code != 200:
-            return Response({"error": f"Failed to fetch metadata from GitHub", "details": r.json()}, status=r.status_code)
+            return Response(
+                {"error": "Failed to fetch metadata from GitHub", "details": r.json()},
+                status=r.status_code
+            )
 
         org_data = r.json()
         github_org_id = org_data.get("id")
 
         if not is_personal:
-            r_member = requests.get(f"https://api.github.com/user/memberships/orgs/{github_org_name}", headers=headers)
+            r_member = requests.get(
+                f"https://api.github.com/user/memberships/orgs/{github_org_name}",
+                headers=headers
+            )
             if r_member.status_code != 200:
-                return Response({"error": f"User is not a member of organization '{github_org_name}' in GitHub."}, status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"error": f"User is not a member of organization '{github_org_name}' in GitHub."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         org, created = Organization.objects.get_or_create(
             github_org_id=github_org_id,
@@ -230,7 +239,10 @@ class GitHubReposViewSet(UserScopedMixin, viewsets.ViewSet):
 
         r = requests.get(url_fetch, headers=headers)
         if r.status_code != 200:
-            return Response({"error": f"Failed to fetch repositories for '{github_org_name}'", "details": r.json()}, status=r.status_code)
+            return Response(
+                {"error": f"Failed to fetch repositories for '{github_org_name}'", "details": r.json()},
+                status=r.status_code
+            )
 
         repos = r.json()
         results = []
@@ -243,4 +255,3 @@ class GitHubReposViewSet(UserScopedMixin, viewsets.ViewSet):
                 "url": repo.get("html_url"),
             })
         return Response(results, status=status.HTTP_200_OK)
-

@@ -54,7 +54,6 @@ class CreateReleaseConfigModelViewSet(
         product = self.get_product()
         serializer.save(product=product)
 
-
     def create(self, request, *args, **kwargs):
         data_to_add_metrics = request.data
 

@@ -68,4 +68,3 @@ class CalculatedSubCharacteristicHistoryModelViewSet(
         'calculated_subcharacteristics',
     )
     serializer_class = CalculatedSubCharacteristicHistorySerializer
-

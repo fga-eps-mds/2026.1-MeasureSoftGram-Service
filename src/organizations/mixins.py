@@ -2,6 +2,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
 from organizations.models import Organization, Product, Repository
 
+
 class UserScopedMixin:
     """
     Mixin to enforce that querysets and objects are restricted to organizations
@@ -42,4 +43,3 @@ class UserScopedMixin:
             ),
             id=repo_pk
         )
-

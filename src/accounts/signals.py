@@ -1,6 +1,7 @@
 from django.dispatch import receiver
 from allauth.socialaccount.signals import social_account_added, social_account_updated
 
+
 @receiver(social_account_added)
 @receiver(social_account_updated)
 def save_github_token(request, sociallogin, **kwargs):

@@ -250,6 +250,3 @@ class GithubValidateView(APIView):
         except Exception:
             # Em caso de erro de rede ou timeout, assume como válido para não bloquear login
             return Response({'valid': True}, status=status.HTTP_200_OK)
-
-
-

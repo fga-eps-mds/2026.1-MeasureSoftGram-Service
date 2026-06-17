@@ -80,4 +80,3 @@ class CalculatedMeasureHistoryModelViewSet(
         'calculated_measures',
     )
     serializer_class = CalculatedMeasureHistorySerializer
-

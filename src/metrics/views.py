@@ -76,4 +76,3 @@ class CollectedMetricHistoryModelViewSet(
         context['start_at'] = self.request.query_params.get('start_at')
         context['end_at'] = self.request.query_params.get('end_at')
         return context
-

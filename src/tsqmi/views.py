@@ -136,4 +136,3 @@ class CalculatedTSQMIHistoryModelViewSet(
     def get_queryset(self):
         repository = self.get_repository()
         return repository.calculated_tsqmis.all().reverse()
-

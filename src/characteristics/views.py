@@ -107,4 +107,3 @@ class CalculatedCharacteristicHistoryModelViewSet(
         'calculated_characteristics'
     )
     serializer_class = CalculatedCharacteristicHistorySerializer
-

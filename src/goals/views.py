@@ -86,4 +86,3 @@ class CreateGoalModelViewSet(
         product = self.get_product()
         created_by = self.get_user()
         serializer.save(product=product, created_by=created_by)
-

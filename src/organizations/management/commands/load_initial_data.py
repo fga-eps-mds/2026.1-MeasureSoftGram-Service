@@ -3,6 +3,7 @@ import contextlib
 import datetime as dt
 import logging
 import os
+import random
 
 # 3rd Party Imports
 import requests
@@ -192,21 +193,30 @@ class Command(BaseCommand):
 
         end_date = timezone.now()
         start_date = end_date - dt.timedelta(days=90)
+        total_seconds = int((end_date - start_date).total_seconds())
 
-        MIN_NUMBER_OF_CALCULATED_ENTITIES = 50
-        MIN_NUMBER = MIN_NUMBER_OF_CALCULATED_ENTITIES
-
+        MIN_NUMBER = 50
         fake_calculated_entities = []
 
         for entity in qs:
             qty = get_entity_qty(entity)
+            needed = MIN_NUMBER - qty
 
-            if qty < MIN_NUMBER:
-                for _ in range(MIN_NUMBER - qty):
-                    created_at = get_random_datetime(start_date, end_date)
-                    fake_calculated_entities.append(
-                        calculated_entity_factory(entity, created_at),
+            if needed <= 0:
+                continue
+
+            step = total_seconds // needed
+            for i in range(needed):
+                jitter = random.randint(-(step // 4), step // 4)
+                offset = max(0, min(step * i + jitter, total_seconds))
+                created_at = timezone.make_aware(
+                    dt.datetime.fromtimestamp(
+                        int(start_date.timestamp()) + offset
                     )
+                )
+                fake_calculated_entities.append(
+                    calculated_entity_factory(entity, created_at),
+                )
 
         bulk_create_klass.objects.bulk_create(fake_calculated_entities)
 
@@ -240,11 +250,18 @@ class Command(BaseCommand):
 
     def create_fake_calculated_measures(self, repository):
         qs = SupportedMeasure.objects.all()
+        current_entity = [None]
+        state = [random.uniform(0.5, 0.85)]
 
         def calculated_entity_factory(entity, created_at):
+            if entity != current_entity[0]:
+                current_entity[0] = entity
+                state[0] = random.uniform(0.5, 0.85)
+            val = state[0]
+            state[0] = max(0.05, min(0.95, state[0] + random.uniform(-0.04, 0.04)))
             return CalculatedMeasure(
                 measure=entity,
-                value=get_random_value('PERCENT'),
+                value=val,
                 created_at=created_at,
                 repository=repository,
             )
@@ -354,11 +371,18 @@ class Command(BaseCommand):
         qs = SupportedCharacteristic.objects.annotate(
             qty=Count('calculated_characteristics'),
         )
+        current_entity = [None]
+        state = [random.uniform(0.5, 0.85)]
 
         def calculated_entity_factory(entity, created_at):
+            if entity != current_entity[0]:
+                current_entity[0] = entity
+                state[0] = random.uniform(0.5, 0.85)
+            val = state[0]
+            state[0] = max(0.05, min(0.95, state[0] + random.uniform(-0.04, 0.04)))
             return CalculatedCharacteristic(
                 characteristic=entity,
-                value=get_random_value('PERCENT'),
+                value=val,
                 created_at=created_at,
                 repository=repository,
             )
@@ -379,11 +403,18 @@ class Command(BaseCommand):
         qs = SupportedSubCharacteristic.objects.annotate(
             qty=Count('calculated_subcharacteristics'),
         )
+        current_entity = [None]
+        state = [random.uniform(0.5, 0.85)]
 
         def calculated_entity_factory(entity, created_at):
+            if entity != current_entity[0]:
+                current_entity[0] = entity
+                state[0] = random.uniform(0.5, 0.85)
+            val = state[0]
+            state[0] = max(0.05, min(0.95, state[0] + random.uniform(-0.04, 0.04)))
             return CalculatedSubCharacteristic(
                 subcharacteristic=entity,
-                value=get_random_value('PERCENT'),
+                value=val,
                 created_at=created_at,
                 repository=repository,
             )
@@ -408,6 +439,8 @@ class Command(BaseCommand):
         )
 
     def create_a_goal(self, product: Product):
+        if product.goals.exists():
+            return
         pre_config = product.release_configuration.first()
         data = get_random_goal_data(pre_config)
         serializer = GoalSerializer(data=data)
@@ -419,7 +452,9 @@ class Command(BaseCommand):
 
         serializer.context['view'] = MockView
         serializer.is_valid(raise_exception=True)
-        serializer.save(product=product)
+        User = get_user_model()
+        admin = User.objects.filter(is_superuser=True).first()
+        serializer.save(product=product, created_by=admin)
 
     def create_fake_tsqmi_data(self, repository):
         if self.fake_data is False and settings.CREATE_FAKE_DATA is False:
@@ -432,15 +467,22 @@ class Command(BaseCommand):
         if qs.count() >= MIN_NUMBER:
             return
 
-        TSQMI.objects.bulk_create(
-            [
-                TSQMI(
-                    value=get_random_value('PERCENT'),
-                    repository=repository,
-                )
-                for _ in range(MIN_NUMBER - qs.count())
-            ]
-        )
+        needed = MIN_NUMBER - qs.count()
+        end_date = timezone.now()
+        start_date = end_date - dt.timedelta(days=90)
+        total_seconds = int((end_date - start_date).total_seconds())
+        step = total_seconds // needed
+        val = random.uniform(0.5, 0.85)
+        tsqmi_list = []
+        for i in range(needed):
+            jitter = random.randint(-(step // 4), step // 4)
+            offset = max(0, min(step * i + jitter, total_seconds))
+            created_at = timezone.make_aware(
+                dt.datetime.fromtimestamp(int(start_date.timestamp()) + offset)
+            )
+            tsqmi_list.append(TSQMI(value=val, repository=repository, created_at=created_at))
+            val = max(0.05, min(0.95, val + random.uniform(-0.04, 0.04)))
+        TSQMI.objects.bulk_create(tsqmi_list)
 
     def create_fake_organizations(self):
         organizations = [

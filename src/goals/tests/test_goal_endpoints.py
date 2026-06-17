@@ -277,3 +277,44 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
                 self.assertEqual(
                     self.user.username, response.json()[i]['created_by']
                 )
+
+    def test_product_without_goal_returns_404(self):
+        self.product.goals.all().delete()
+        url = reverse(
+            'current-goal-list',
+            args=[self.org.id, self.product.id],
+        )
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()['detail'], 'This product does not have a goal.')
+
+    def test_compare_goals_with_release_id_query_param(self):
+        goal1 = Goal.objects.create(
+            created_at=date.today(),
+            created_by=self.user,
+            product=self.product,
+            data={
+                'reliability': 53,
+                'maintainability': 53,
+                'functional_suitability': 53,
+            },
+        )
+        goal2 = Goal.objects.create(
+            created_at=date.today(),
+            created_by=self.user,
+            product=self.product,
+            data={
+                'reliability': 60,
+                'maintainability': 60,
+                'functional_suitability': 60,
+            },
+        )
+        url = reverse(
+            'all-goal-list',
+            args=[self.org.id, self.product.id],
+        )
+        response = self.client.get(f"{url}?release_id={goal1.id}", format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]['id'], goal1.id)
+

@@ -461,3 +461,110 @@ class RepositoriesViewsSetCase(APITestCaseExpanded):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, 400)
+
+
+from unittest.mock import patch, MagicMock
+from organizations.utils import onboard_repository_async, get_default_mock_payload
+from organizations.models import Repository
+
+class OnboardRepositoryTestCase(APITestCaseExpanded):
+    def setUp(self):
+        super().setUp()
+        self.user = self.get_or_create_test_user()
+        self.user.github_access_token = 'my-github-token'
+        self.user.save()
+
+        self.org = self.get_organization()
+        self.product = self.get_product(self.org)
+        self.repository = self.get_repository(self.product, name='Test Repo')
+        self.repository.github_full_name = 'my-org/test-repo'
+        self.repository.save()
+
+    @patch('organizations.utils.requests.get')
+    @patch('organizations.utils.requests.post')
+    def test_onboard_repository_async_github_success(self, mock_post, mock_get):
+        def side_effect(url, headers=None, timeout=None):
+            resp = MagicMock()
+            resp.status_code = 200
+            if "/actions/workflows" in url:
+                resp.json.return_value = {
+                    "workflows": [
+                        {"id": 123, "name": "CI/CD Measure Flow"}
+                    ]
+                }
+            else:
+                resp.json.return_value = {"default_branch": "develop"}
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        mock_post_resp = MagicMock()
+        mock_post_resp.status_code = 204
+        mock_post.return_value = mock_post_resp
+
+        onboard_repository_async(self.repository, self.user)
+
+        self.assertTrue(mock_post.called)
+        args, kwargs = mock_post.call_args
+        self.assertEqual(kwargs['json'], {"ref": "develop"})
+
+    @patch('organizations.utils.requests.get')
+    def test_onboard_repository_async_fallback_mock(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"workflows": []}
+        mock_get.return_value = mock_resp
+
+        from metrics.models import CollectedMetric
+        from tsqmi.models import TSQMI
+
+        self.assertEqual(CollectedMetric.objects.filter(repository=self.repository).count(), 0)
+
+        onboard_repository_async(self.repository, self.user)
+
+        self.assertTrue(CollectedMetric.objects.filter(repository=self.repository).count() > 0)
+        self.assertTrue(TSQMI.objects.filter(repository=self.repository).count() > 0)
+
+    @patch('organizations.utils.requests.get')
+    def test_onboard_repository_async_exception_handled(self, mock_get):
+        mock_get.side_effect = Exception("GitHub API down")
+
+        from tsqmi.models import TSQMI
+        onboard_repository_async(self.repository, self.user)
+
+        self.assertTrue(TSQMI.objects.filter(repository=self.repository).count() > 0)
+
+    def test_get_default_mock_payload(self):
+        payload = get_default_mock_payload()
+        self.assertIn('github', payload)
+        self.assertIn('sonarqube', payload)
+
+    def test_tsqmi_latest_and_history_serializers(self):
+        from tsqmi.models import TSQMI
+        tsqmi1 = TSQMI.objects.create(repository=self.repository, value=0.85)
+        tsqmi2 = TSQMI.objects.create(repository=self.repository, value=0.90)
+
+        from organizations.serializers import RepositoryTSQMILatestValueSerializer, RepositoriesTSQMIHistorySerializer
+        
+        from rest_framework.test import APIRequestFactory
+        factory = APIRequestFactory()
+        request = factory.get('/')
+
+        serializer_latest = RepositoryTSQMILatestValueSerializer(
+            self.repository, context={'request': request}
+        )
+        data_latest = serializer_latest.data
+        self.assertEqual(data_latest['current_tsqmi']['value'], 0.90)
+        self.assertIn('/latest-values/tsqmi/', data_latest['url'])
+
+        serializer_history = RepositoriesTSQMIHistorySerializer(
+            self.repository, context={'request': request}
+        )
+        data_history = serializer_history.data
+        self.assertEqual(len(data_history['history']), 2)
+        self.assertEqual(data_history['history'][0]['value'], 0.85)
+        self.assertEqual(data_history['history'][1]['value'], 0.90)
+
+
+
+

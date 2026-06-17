@@ -319,7 +319,7 @@ class AccountsViews(APITestCaseExpanded):
         with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
              patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
             response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
-            
+
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['valid'])
 
@@ -333,7 +333,7 @@ class AccountsViews(APITestCaseExpanded):
         with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
              patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
             response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
-            
+
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()['valid'])
         self.assertEqual(response.json()['reason'], 'Invalid GitHub Client ID or Client Secret')
@@ -343,7 +343,7 @@ class AccountsViews(APITestCaseExpanded):
         with patch('django.conf.settings.GITHUB_CLIENT_ID', 'backend_client_id'), \
              patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
             response = self.client.post(url, {'client_id': 'frontend_client_id'}, format='json')
-            
+
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()['valid'])
         self.assertEqual(response.json()['reason'], 'Client ID mismatch between frontend and backend')
@@ -353,7 +353,7 @@ class AccountsViews(APITestCaseExpanded):
         with patch('django.conf.settings.GITHUB_CLIENT_ID', ''), \
              patch('django.conf.settings.GITHUB_SECRET', ''):
             response = self.client.post(url, {'client_id': 'any_id'}, format='json')
-            
+
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()['valid'])
         self.assertEqual(response.json()['reason'], 'Backend GitHub credentials are not configured')
@@ -364,9 +364,9 @@ class AccountsViews(APITestCaseExpanded):
         sociallogin.account.provider = 'github'
         sociallogin.token.token = 'new_github_token'
         sociallogin.user = self.user
-        
+
         save_github_token(None, sociallogin)
-        
+
         self.user.refresh_from_db()
         self.assertEqual(self.user.github_access_token, 'new_github_token')
 
@@ -495,8 +495,6 @@ class AccountsViews(APITestCaseExpanded):
         with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
              patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
             response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
-            
+
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['valid'])
-
-

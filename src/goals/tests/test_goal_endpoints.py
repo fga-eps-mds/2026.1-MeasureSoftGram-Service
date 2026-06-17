@@ -299,7 +299,7 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
                 'functional_suitability': 53,
             },
         )
-        goal2 = Goal.objects.create(
+        Goal.objects.create(
             created_at=date.today(),
             created_by=self.user,
             product=self.product,
@@ -317,4 +317,3 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]['id'], goal1.id)
-

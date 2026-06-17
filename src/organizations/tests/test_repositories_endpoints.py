@@ -1,8 +1,8 @@
 import datetime as dt
 from unittest import mock
-from unittest.mock import patch, Mock
-from zoneinfo import ZoneInfo
+from unittest.mock import patch, Mock, MagicMock
 
+from organizations.utils import onboard_repository_async, get_default_mock_payload
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
@@ -463,10 +463,6 @@ class RepositoriesViewsSetCase(APITestCaseExpanded):
         self.assertEqual(response.status_code, 400)
 
 
-from unittest.mock import patch, MagicMock
-from organizations.utils import onboard_repository_async, get_default_mock_payload
-from organizations.models import Repository
-
 class OnboardRepositoryTestCase(APITestCaseExpanded):
     def setUp(self):
         super().setUp()
@@ -515,7 +511,6 @@ class OnboardRepositoryTestCase(APITestCaseExpanded):
         mock_resp.json.return_value = {"workflows": []}
         mock_get.return_value = mock_resp
 
-        from metrics.models import CollectedMetric
         from tsqmi.models import TSQMI
 
         self.assertEqual(CollectedMetric.objects.filter(repository=self.repository).count(), 0)
@@ -541,11 +536,11 @@ class OnboardRepositoryTestCase(APITestCaseExpanded):
 
     def test_tsqmi_latest_and_history_serializers(self):
         from tsqmi.models import TSQMI
-        tsqmi1 = TSQMI.objects.create(repository=self.repository, value=0.85)
-        tsqmi2 = TSQMI.objects.create(repository=self.repository, value=0.90)
+        TSQMI.objects.create(repository=self.repository, value=0.85)
+        TSQMI.objects.create(repository=self.repository, value=0.90)
 
         from organizations.serializers import RepositoryTSQMILatestValueSerializer, RepositoriesTSQMIHistorySerializer
-        
+
         from rest_framework.test import APIRequestFactory
         factory = APIRequestFactory()
         request = factory.get('/')
@@ -564,7 +559,3 @@ class OnboardRepositoryTestCase(APITestCaseExpanded):
         self.assertEqual(len(data_history['history']), 2)
         self.assertEqual(data_history['history'][0]['value'], 0.85)
         self.assertEqual(data_history['history'][1]['value'], 0.90)
-
-
-
-

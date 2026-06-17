@@ -1,3 +1,4 @@
+from unittest.mock import patch, MagicMock
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import status
 from rest_framework.test import APIClient
@@ -251,14 +252,20 @@ class OrganizationPermissionIsolationTestCase(APITestCaseExpanded):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
-        detail_url = reverse('repository-detail', kwargs={'organization_pk': org.id, 'product_pk': product.id, 'pk': repo.id})
+        detail_url = reverse(
+            'repository-detail',
+            kwargs={
+                'organization_pk': org.id,
+                'product_pk': product.id,
+                'pk': repo.id
+            }
+        )
         response = self.client.get(detail_url)
         self.assertEqual(response.status_code, 404)
 
 
-from unittest.mock import patch, MagicMock
-
 class ImportOrganizationViewsTestCase(APITestCaseExpanded):
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username='test-user', password='test-pass'
@@ -317,7 +324,7 @@ class ImportOrganizationViewsTestCase(APITestCaseExpanded):
         response = self.client.post(url, {'github_org_name': 'test-user'}, format='json')
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['name'], 'My Personal Org')
-        
+
         org = Organization.objects.get(github_org_id=9999)
         self.assertEqual(org.github_org_name, 'test-user')
         self.assertEqual(org.description, 'My bio')
@@ -348,7 +355,7 @@ class ImportOrganizationViewsTestCase(APITestCaseExpanded):
         response = self.client.post(url, {'github_org_name': 'company-org'}, format='json')
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['name'], 'My Company Org')
-        
+
         org = Organization.objects.get(github_org_id=8888)
         self.assertEqual(org.github_org_name, 'company-org')
         self.assertEqual(org.description, 'Our description')
@@ -539,5 +546,3 @@ class GitHubReposViewsTestCase(APITestCaseExpanded):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertEqual(self.user.github_access_token, 'social-token-xyz')
-
-

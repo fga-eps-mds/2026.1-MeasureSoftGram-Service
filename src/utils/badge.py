@@ -94,4 +94,3 @@ def render_stale_badge_svg(label):
         label=label,
     )
     return HttpResponse(svg, content_type="image/svg+xml")
-

@@ -175,7 +175,6 @@ class LatestCalculatedCharacteristicBadgeViewSetTest(APITestCaseExpanded):
         response = self.client.get(self._get_badge_url())
         content = response.content.decode()
         self.assertIn('>A<', content)
-
     @override_settings(BADGE_STALENESS_DAYS=0)
     def test_badge_staleness_disabled_with_zero(self):
         calc = self._create_calculated_characteristic(0.90)
@@ -184,4 +183,11 @@ class LatestCalculatedCharacteristicBadgeViewSetTest(APITestCaseExpanded):
         response = self.client.get(self._get_badge_url())
         content = response.content.decode()
         self.assertIn('>A<', content)
-
+    @override_settings(BADGE_STALENESS_DAYS=None)
+    def test_badge_staleness_disabled_with_none(self):
+        calc = self._create_calculated_characteristic(0.90)
+        calc.created_at = timezone.now() - timedelta(days=365)
+        calc.save()
+        response = self.client.get(self._get_badge_url())
+        content = response.content.decode()
+        self.assertIn('>A<', content)

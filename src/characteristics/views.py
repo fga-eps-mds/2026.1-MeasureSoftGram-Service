@@ -186,4 +186,3 @@ class LatestCalculatedCharacteristicBadgeViewSet(
             return render_stale_badge_svg(label)
 
         return render_badge_svg(label, latest.value)
-

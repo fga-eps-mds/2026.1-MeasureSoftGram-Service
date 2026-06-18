@@ -54,6 +54,46 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
+BADGE_DEMO_REPOSITORIES = [
+    {
+        'name': 'Badge Demo A',
+        'grade': 'A',
+        'value': 0.90,
+        'description': 'Repositório mockado para teste visual da badge A.',
+    },
+    {
+        'name': 'Badge Demo B',
+        'grade': 'B',
+        'value': 0.70,
+        'description': 'Repositório mockado para teste visual da badge B.',
+    },
+    {
+        'name': 'Badge Demo C',
+        'grade': 'C',
+        'value': 0.50,
+        'description': 'Repositório mockado para teste visual da badge C.',
+    },
+    {
+        'name': 'Badge Demo D',
+        'grade': 'D',
+        'value': 0.30,
+        'description': 'Repositório mockado para teste visual da badge D.',
+    },
+    {
+        'name': 'Badge Demo E',
+        'grade': 'E',
+        'value': 0.10,
+        'description': 'Repositório mockado para teste visual da badge E.',
+    },
+    {
+        'name': 'Badge Demo N-A',
+        'grade': 'N/A',
+        'value': None,
+        'description': 'Repositório mockado sem valor atual para testar badge N/A.',
+    },
+]
+
+
 class Command(BaseCommand):
     help = 'Registra os dados iniciais no banco de dados'
 
@@ -657,6 +697,74 @@ class Command(BaseCommand):
                 continue
             repository.save()
 
+    def create_badge_demo_repositories(self):
+        organization, _ = Organization.objects.update_or_create(
+            name='Badge Demo Organization',
+            defaults={
+                'description': (
+                    'Organização mockada para validar visualmente as badges '
+                    'A, B, C, D, E e N/A.'
+                ),
+            },
+        )
+
+        product, _ = Product.objects.get_or_create(
+            name='Badge Demo Product',
+            organization=organization,
+            defaults={
+                'description': (
+                    'Produto mockado com um repositório para cada tipo de '
+                    'badge suportada pelo sistema.'
+                ),
+            },
+        )
+
+        repositories = {}
+        for repo_data in BADGE_DEMO_REPOSITORIES:
+            repository, _ = Repository.objects.update_or_create(
+                name=repo_data['name'],
+                product=product,
+                defaults={
+                    'description': repo_data['description'],
+                    'platform': 'github',
+                    'imported': True,
+                },
+            )
+            repositories[repo_data['grade']] = repository
+
+        return repositories
+
+    def create_badge_demo_values(self, repositories):
+        characteristics = list(SupportedCharacteristic.objects.all())
+        created_at = timezone.now()
+
+        for repo_data in BADGE_DEMO_REPOSITORIES:
+            repository = repositories[repo_data['grade']]
+
+            repository.calculated_tsqmis.all().delete()
+            repository.calculated_characteristics.all().delete()
+
+            if repo_data['value'] is None:
+                continue
+
+            TSQMI.objects.create(
+                value=repo_data['value'],
+                repository=repository,
+                created_at=created_at,
+            )
+
+            CalculatedCharacteristic.objects.bulk_create(
+                [
+                    CalculatedCharacteristic(
+                        characteristic=characteristic,
+                        value=repo_data['value'],
+                        created_at=created_at,
+                        repository=repository,
+                    )
+                    for characteristic in characteristics
+                ]
+            )
+
     def handle(self, *args, **kwargs):
         self.fake_data = kwargs.get('fake_data')
 
@@ -681,12 +789,17 @@ class Command(BaseCommand):
         repositories = Repository.objects.all()
 
         if settings.CREATE_FAKE_DATA or self.fake_data:
+            badge_demo_repositories = self.create_badge_demo_repositories()
+            repositories = Repository.objects.all()
+
             for repository in repositories:
                 self.create_fake_collected_metrics(repository)
                 self.create_fake_calculated_measures(repository)
                 self.create_fake_calculated_subcharacteristics(repository)
                 self.create_fake_calculated_characteristics(repository)
                 self.create_fake_tsqmi_data(repository)
+
+            self.create_badge_demo_values(badge_demo_repositories)
 
         products = Product.objects.all()
 

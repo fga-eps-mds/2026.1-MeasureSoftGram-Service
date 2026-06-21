@@ -81,7 +81,6 @@ def render_badge_svg(label, value):
     )
     return HttpResponse(svg, content_type="image/svg+xml")
 
-
 def render_stale_badge_svg(label):
     """Render a N/A (stale/missing) badge SVG."""
     text = f"{label} N/A"

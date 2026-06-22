@@ -1,4 +1,4 @@
-from resources import calculate_characteristics
+﻿from resources import calculate_characteristics
 from rest_framework import mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response

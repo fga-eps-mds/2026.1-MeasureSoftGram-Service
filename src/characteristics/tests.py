@@ -1,4 +1,4 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.test import override_settings
 from django.utils import timezone
@@ -110,7 +110,8 @@ class LatestCalculatedCharacteristicBadgeViewSetTest(APITestCaseExpanded):
         self._create_calculated_characteristic(0.90)
         response = self.client.get(self._get_badge_url())
         content = response.content.decode()
-        self.assertIn('>A<', content)        self.assertIn('#4c1', content)
+        self.assertIn('>A<', content)
+        self.assertIn('#4c1', content)
 
     def test_badge_grade_b(self):
         self._create_calculated_characteristic(0.70)

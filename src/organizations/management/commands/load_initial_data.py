@@ -1,4 +1,4 @@
-# Python Imports
+﻿# Python Imports
 import contextlib
 import datetime as dt
 import logging
@@ -492,8 +492,8 @@ class Command(BaseCommand):
 
         serializer.context['view'] = MockView
         serializer.is_valid(raise_exception=True)
-        User = get_user_model()
-        admin = User.objects.filter(is_superuser=True).first()
+        user_model = get_user_model()
+        admin = user_model.objects.filter(is_superuser=True).first()
         serializer.save(product=product, created_by=admin)
 
     def create_fake_tsqmi_data(self, repository):
@@ -768,9 +768,9 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.fake_data = kwargs.get('fake_data')
 
-        User = get_user_model()
+        user_model = get_user_model()
         with contextlib.suppress(IntegrityError):
-            User.objects.create_superuser(
+            user_model.objects.create_superuser(
                 username=os.getenv('SUPERADMIN_USERNAME', 'admin'),
                 email=os.getenv('SUPERADMIN_EMAIL', 'admin@admin.com'),
                 password=os.getenv('SUPERADMIN_PASSWORD', 'admin'),
@@ -785,8 +785,6 @@ class Command(BaseCommand):
         self.create_fake_organizations()
         self.create_fake_products()
         self.create_fake_repositories()
-
-        repositories = Repository.objects.all()
 
         if settings.CREATE_FAKE_DATA or self.fake_data:
             badge_demo_repositories = self.create_badge_demo_repositories()

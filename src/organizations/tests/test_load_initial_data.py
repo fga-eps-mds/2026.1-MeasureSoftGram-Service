@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+﻿from unittest.mock import Mock, patch
 
 from django.db.utils import IntegrityError
 
@@ -102,7 +102,9 @@ class LoadInitialDataBadgeDemoTestCase(APITestCaseExpanded):
             Command, 'create_badge_demo_values'
         ) as mock_create_badge_demo_values, patch.object(
             Command, 'create_a_goal'
-        ), patch('organizations.management.commands.load_initial_data.Repository.objects.all') as mock_repository_all, patch(
+        ), patch(
+            'organizations.management.commands.load_initial_data.Repository.objects.all'
+        ) as mock_repository_all, patch(
             'organizations.management.commands.load_initial_data.get_user_model'
         ) as mock_get_user_model:
             mock_create_badge_demo_repositories.return_value = {'A': Mock()}
@@ -126,6 +128,3 @@ class LoadInitialDataBadgeDemoTestCase(APITestCaseExpanded):
 
         create_balance_matrix(characteristics)
         self.assertEqual(BalanceMatrix.objects.count(), count_after_first_run)
-
-
-

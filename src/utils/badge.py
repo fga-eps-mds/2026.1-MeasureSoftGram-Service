@@ -1,4 +1,5 @@
-from datetime import timedelta
+﻿from datetime import timedelta
+from html import escape
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -63,6 +64,7 @@ def is_stale(created_at):
 
 def render_badge_svg(label, value):
     """Render a badge SVG for the given label and 0-1 value."""
+    label = escape(label)
     grade, color = get_grade(value)
     # Approximate width: 7px per char for label + 30px for grade box
     label_width = max(len(label) * 7 + 10, 60)
@@ -81,8 +83,10 @@ def render_badge_svg(label, value):
     )
     return HttpResponse(svg, content_type="image/svg+xml")
 
+
 def render_stale_badge_svg(label):
     """Render a N/A (stale/missing) badge SVG."""
+    label = escape(label)
     text = f"{label} N/A"
     width = max(len(text) * 7 + 10, 100)
     center = width // 2

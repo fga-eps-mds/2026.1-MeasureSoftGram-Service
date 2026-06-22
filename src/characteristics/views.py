@@ -1,4 +1,4 @@
-from resources import calculate_characteristics
+﻿from resources import calculate_characteristics
 from rest_framework import mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -139,3 +139,50 @@ class CalculatedCharacteristicHistoryModelViewSet(
         'calculated_characteristics'
     )
     serializer_class = CalculatedCharacteristicHistorySerializer
+
+
+class LatestCalculatedCharacteristicBadgeViewSet(
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Endpoint público que retorna uma badge SVG com o grau (A–E)
+    da última característica calculada para o repositório.
+
+    URL: .../latest-values/characteristics/{characteristic_key}/badge/
+    """
+
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = LatestCalculatedCharacteristicSerializer
+
+    def get_repository(self):
+        return get_object_or_404(
+            Repository,
+            id=self.kwargs['repository_pk'],
+            product_id=self.kwargs['product_pk'],
+            product__organization_id=self.kwargs['organization_pk'],
+        )
+
+    def list(self, request, *args, **kwargs):
+        from utils.badge import is_stale, render_badge_svg, render_stale_badge_svg
+
+        repository = self.get_repository()
+        characteristic_key = self.kwargs.get('characteristic_key')
+
+        characteristic = get_object_or_404(
+            SupportedCharacteristic,
+            key=characteristic_key,
+        )
+
+        latest = (
+            repository.calculated_characteristics
+            .filter(characteristic=characteristic)
+            .first()
+        )
+
+        label = characteristic.name
+        if latest is None or is_stale(latest.created_at):
+            return render_stale_badge_svg(label)
+
+        return render_badge_svg(label, latest.value)

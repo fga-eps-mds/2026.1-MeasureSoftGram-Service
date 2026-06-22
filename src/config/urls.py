@@ -9,6 +9,7 @@ from rest_framework import permissions
 from accounts import urls as accounts_urls
 from characteristics.views import (
     BalanceMatrixViewSet,
+    LatestCalculatedCharacteristicBadgeViewSet,
     SupportedCharacteristicModelViewSet,
 )
 from entity_trees.views import SupportedEntitiesRelationshipTreeViewSet
@@ -66,6 +67,12 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+REPO_PREFIX = (
+    'api/v1/organizations/<int:organization_pk>/'
+    'products/<int:product_pk>/'
+    'repositories/<int:repository_pk>/'
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include(main_router.urls)),
@@ -73,6 +80,11 @@ urlpatterns = [
     path('api/v1/', include(prod_router.nested_router.urls)),
     path('api/v1/', include(repo_router.nested_router.urls)),
     path('api/v1/', include(accounts_urls.urlpatterns)),
+    path(
+        REPO_PREFIX + 'latest-values/characteristics/<str:characteristic_key>/badge/',
+        LatestCalculatedCharacteristicBadgeViewSet.as_view({'get': 'list'}),
+        name='characteristic-badge',
+    ),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]
 

@@ -1,6 +1,7 @@
 ﻿from unittest.mock import Mock, patch
 
 from django.db.utils import IntegrityError
+from django.test import override_settings
 
 from characteristics.models import (
     BalanceMatrix,
@@ -13,6 +14,7 @@ from organizations.management.commands.load_initial_data import (
 )
 from organizations.management.commands.utils import create_balance_matrix
 from organizations.models import Organization, Product
+from measures.models import CalculatedMeasure
 from tsqmi.models import TSQMI
 from utils.tests import APITestCaseExpanded
 
@@ -128,3 +130,44 @@ class LoadInitialDataBadgeDemoTestCase(APITestCaseExpanded):
 
         create_balance_matrix(characteristics)
         self.assertEqual(BalanceMatrix.objects.count(), count_after_first_run)
+
+
+class LoadInitialDataFakeDataTestCase(APITestCaseExpanded):
+    def setUp(self):
+        self.command = Command()
+        self.org = self.get_organization()
+        self.product = self.get_product(self.org)
+        self.repository = self.get_repository(self.product)
+
+    def test_create_fake_tsqmi_data_creates_entries(self):
+        self.command.fake_data = True
+        self.command.create_fake_tsqmi_data(self.repository)
+        self.assertEqual(self.repository.calculated_tsqmis.count(), 50)
+
+    @override_settings(CREATE_FAKE_DATA=False)
+    def test_create_fake_tsqmi_data_skips_when_disabled(self):
+        self.command.fake_data = False
+        self.command.create_fake_tsqmi_data(self.repository)
+        self.assertEqual(self.repository.calculated_tsqmis.count(), 0)
+
+    def test_create_fake_tsqmi_data_skips_when_already_populated(self):
+        for _ in range(50):
+            TSQMI.objects.create(value=0.5, repository=self.repository)
+        self.command.fake_data = True
+        self.command.create_fake_tsqmi_data(self.repository)
+        self.assertEqual(self.repository.calculated_tsqmis.count(), 50)
+
+    def test_create_fake_calculated_measures_creates_entries(self):
+        self.command.fake_data = True
+        self.command.create_fake_calculated_measures(self.repository)
+        self.assertTrue(
+            CalculatedMeasure.objects.filter(repository=self.repository).exists()
+        )
+
+    @override_settings(CREATE_FAKE_DATA=False)
+    def test_create_fake_calculated_measures_skips_when_disabled(self):
+        self.command.fake_data = False
+        self.command.create_fake_calculated_measures(self.repository)
+        self.assertFalse(
+            CalculatedMeasure.objects.filter(repository=self.repository).exists()
+        )

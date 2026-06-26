@@ -1,0 +1,402 @@
+{
+  "apiVersion": "dashboard.grafana.app/v2",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "saude-qualidade-repo",
+    "namespace": "default",
+    "uid": "841fdfc2-e393-4319-8695-50e0460ca9cd",
+    "resourceVersion": "1781365505945009",
+    "generation": 4,
+    "creationTimestamp": "2026-06-13T15:34:04Z",
+    "labels": {
+      "grafana.app/deprecatedInternalID": "3171026305658880"
+    },
+    "annotations": {
+      "grafana.app/createdBy": "access-policy:service",
+      "grafana.app/folder": "",
+      "grafana.app/managedBy": "classic-file-provisioning",
+      "grafana.app/managerAllowsEdits": "true",
+      "grafana.app/managerId": "MeasureSoftGram",
+      "grafana.app/saved-from-ui": "Grafana v13.0.2 (3fcdbc5a)",
+      "grafana.app/sourceChecksum": "6e5a0b14fbe3756690cc5b44263afa0d",
+      "grafana.app/sourcePath": "/etc/grafana/dashboards/7-saude-qualidade-por-repositorio.json",
+      "grafana.app/sourceTimestamp": "1781364674000",
+      "grafana.app/updatedBy": "user:afoguqhow06bkf",
+      "grafana.app/updatedTimestamp": "2026-06-13T15:45:05Z"
+    }
+  },
+  "spec": {
+    "annotations": [
+      {
+        "kind": "AnnotationQuery",
+        "spec": {
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "datasource": {
+              "name": "-- Grafana --"
+            },
+            "spec": {}
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "builtIn": true
+        }
+      }
+    ],
+    "cursorSync": "Off",
+    "editable": true,
+    "elements": {
+      "panel-1": {
+        "kind": "Panel",
+        "spec": {
+          "id": 1,
+          "title": "Evolução das Características de Qualidade",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "format": "table",
+                        "rawSql": "\nSELECT\n    cc.created_at::date AS datetime,\n    ROUND(AVG(CASE WHEN sc.key = 'reliability'            THEN cc.value END)::numeric, 3) AS reliability,\n    ROUND(AVG(CASE WHEN sc.key = 'maintainability'        THEN cc.value END)::numeric, 3) AS maintainability,\n    ROUND(AVG(CASE WHEN sc.key = 'functional_suitability' THEN cc.value END)::numeric, 3) AS functional_suitability\nFROM characteristics_calculatedcharacteristic cc\nJOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\nWHERE cc.repository_id = ${repository}\nGROUP BY cc.created_at::date\nORDER BY cc.created_at::date\n"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "\nSELECT\n    rel.release_name,\n    rel.start_at::date AS release_date\nFROM releases rel\nJOIN organizations_repository repo ON repo.product_id = rel.product_id\nWHERE repo.id = ${repository}\nORDER BY rel.start_at\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "volkovlabs-echarts-panel",
+            "version": "7.2.5",
+            "spec": {
+              "options": {
+                "baidu": {
+                  "callback": "bmapReady",
+                  "key": ""
+                },
+                "editor": {
+                  "format": "auto"
+                },
+                "editorMode": "code",
+                "gaode": {
+                  "key": "",
+                  "plugin": "AMap.Scale,AMap.ToolBar"
+                },
+                "getOption": "\ntry {\n  const panelData = context.panel.data;\n  if (!panelData || !panelData.series || panelData.series.length === 0) {\n    return { title: { text: 'Sem dados — selecione um repositório', left: 'center', top: 'center' } };\n  }\n\n  function toArr(field) {\n    if (!field) return [];\n    const v = field.values;\n    if (!v) return [];\n    if (v.buffer) return Array.from(new Float64Array(v.buffer));\n    if (Array.isArray(v)) return v;\n    if (typeof v.toArray === 'function') return v.toArray();\n    return Array.from(v);\n  }\n\n  const frame = panelData.series[0];\n  if (!frame || frame.fields.length === 0) {\n    return { title: { text: 'Query sem retorno', left: 'center', top: 'center' } };\n  }\n\n  const datetimes = toArr(frame.fields.find(f => f.name === 'datetime'));\n\n  const characteristics = [\n    { label: 'Confiabilidade', color: '#1D9E75', data: toArr(frame.fields.find(f => f.name === 'reliability')) },\n    { label: 'Manutenibilidade', color: '#378ADD', data: toArr(frame.fields.find(f => f.name === 'maintainability')) },\n    { label: 'Adequação Funcional', color: '#D85A30', data: toArr(frame.fields.find(f => f.name === 'functional_suitability')) },\n  ];\n\n  // releases da query B\n  let releases = [];\n  if (panelData.series.length > 1) {\n    const rf = panelData.series[1];\n    const rNames = toArr(rf.fields.find(f => f.name === 'release_name'));\n    const rDates = toArr(rf.fields.find(f => f.name === 'release_date'));\n    releases = rNames.map((name, i) => {\n      const target = String(rDates[i] || '').slice(0, 10);\n      let idx = datetimes.findIndex(d => String(d).slice(0, 10) >= target);\n      if (idx < 0) idx = datetimes.length - 1;\n      return { label: name, dateIndex: idx };\n    });\n  }\n\n  // ── pulso ECG ──────────────────────────────────────────────────────────────\n  function msgPulse(scores, idxList) {\n    const SPS = 60;\n    const pts = [];\n    for (let ii = 0; ii < idxList.length - 1; ii++) {\n      const a = scores[idxList[ii]] ?? 0, b = scores[idxList[ii + 1]] ?? 0;\n      const delta = b - a, pk = delta * 2.2;\n      for (let s = 0; s < SPS; s++) {\n        const t = s / SPS;\n        let v;\n        if (t < 0.30) { v = a; }\n        else if (t < 0.42) { const p = (t - 0.30) / 0.12; v = a + pk * Math.sin(p * Math.PI * 0.5); }\n        else if (t < 0.56) { const p = (t - 0.42) / 0.14; v = a + pk * (1 - p); }\n        else if (t < 0.68) { const p = (t - 0.56) / 0.12; v = b - delta * 0.15 * Math.sin(p * Math.PI); }\n        else { v = b; }\n        pts.push(Math.max(0.01, Math.min(0.99, v)));\n      }\n    }\n    pts.push(Math.max(0.01, Math.min(0.99, scores[idxList[idxList.length - 1]] ?? 0)));\n    return pts;\n  }\n\n  const N = datetimes.length;\n  const idxList = Array.from({ length: N }, (_, i) => i);\n  const SPS = 60;\n\n  const xLabels = [];\n  idxList.forEach((idx, ii) => {\n    if (ii < idxList.length - 1) {\n      for (let s = 0; s < SPS; s++) xLabels.push(datetimes[idx]);\n    } else {\n      xLabels.push(datetimes[idx]);\n    }\n  });\n\n  const releaseLines = releases.map(r => ({\n    xAxis: r.dateIndex * SPS,\n    label: { formatter: r.label, position: 'insideStartTop', fontSize: 10, fontWeight: 'bold' },\n    lineStyle: { color: '#BA7517', type: 'dashed', width: 1 },\n  }));\n\n  const isDark = context.grafana.theme.isDark;\n  const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';\n  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';\n\n  const series = characteristics.map(c => ({\n    name: c.label,\n    type: 'line',\n    smooth: false,\n    symbol: 'none',\n    lineStyle: { color: c.color, width: 1.5 },\n    data: msgPulse(c.data, idxList),\n    markLine: {\n      silent: true,\n      symbol: 'none',\n      data: releaseLines,\n    },\n    markPoint: {\n      symbol: 'circle',\n      symbolSize: 6,\n      data: releases.map(r => ({\n        coord: [r.dateIndex * SPS, c.data[r.dateIndex] ?? 0],\n        itemStyle: { color: c.color },\n      })),\n    },\n  }));\n\n  return {\n    backgroundColor: 'transparent',\n    legend: {\n      data: characteristics.map(c => c.label),\n      textStyle: { color: textColor, fontSize: 11 },\n      bottom: 0,\n    },\n    tooltip: {\n      trigger: 'axis',\n      formatter: params => {\n        const idx = Math.floor(params[0].dataIndex / SPS);\n        const dt = datetimes[Math.min(idx, N - 1)];\n        const rel = releases.find(r => r.dateIndex === idx);\n        let html = `<b>${dt}</b>`;\n        if (rel) html += `<br/><span style=\"color:#BA7517\">● ${rel.label}</span>`;\n        params.forEach(p => {\n          html += `<br/><span style=\"color:${p.color}\">■</span> ${p.seriesName}: <b>${(p.data ?? 0).toFixed(2)}</b>`;\n        });\n        return html;\n      },\n    },\n    grid: { top: 20, bottom: 60, left: 50, right: 20 },\n    xAxis: {\n      type: 'category',\n      data: xLabels,\n      axisLabel: {\n        showMaxLabel: true,\n        interval: SPS * Math.floor(N / 5) - 1,\n        color: textColor,\n        fontSize: 10,\n        formatter: v => v ? String(v).slice(5, 10).replace('-', '/') : '',\n      },\n      axisLine: { lineStyle: { color: gridColor } },\n      splitLine: { show: false },\n    },\n    yAxis: {\n      type: 'value',\n      min: 0,\n      max: 1,\n      interval: 0.25,\n      axisLabel: { color: textColor, fontSize: 9, formatter: v => v.toFixed(2) },\n      splitLine: { lineStyle: { color: gridColor } },\n    },\n    series,\n  };\n} catch (e) {\n  return { title: { text: 'Erro: ' + e.message, left: 'center', top: 'center' } };\n}\n",
+                "google": {
+                  "callback": "gmapReady",
+                  "key": ""
+                },
+                "map": "none",
+                "renderer": "canvas",
+                "themeEditor": {
+                  "config": "{}",
+                  "name": "default"
+                },
+                "visualEditor": {
+                  "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n}\n",
+                  "dataset": [],
+                  "series": []
+                }
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "New panel",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "dataset": "postgres",
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "\r\nSELECT\r\n    cc.created_at::date AS datetime,\r\n    ROUND(AVG(CASE WHEN sc.key = 'reliability'            THEN cc.value END)::numeric, 3) AS reliability,\r\n    ROUND(AVG(CASE WHEN sc.key = 'maintainability'        THEN cc.value END)::numeric, 3) AS maintainability,\r\n    ROUND(AVG(CASE WHEN sc.key = 'functional_suitability' THEN cc.value END)::numeric, 3) AS functional_suitability\r\nFROM characteristics_calculatedcharacteristic cc\r\nJOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\r\nWHERE cc.repository_id = ${repository}\r\nGROUP BY cc.created_at::date\r\nORDER BY cc.created_at::date\r\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "dataset": "postgres",
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "\r\nSELECT\r\n    rel.release_name,\r\n    rel.start_at::date AS release_date\r\nFROM releases rel\r\nJOIN organizations_repository repo ON repo.product_id = rel.product_id\r\nWHERE repo.id = ${repository}\r\nORDER BY rel.start_at\r\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "volkovlabs-echarts-panel",
+            "version": "7.2.5",
+            "spec": {
+              "options": {
+                "baidu": {
+                  "callback": "bmapReady",
+                  "key": ""
+                },
+                "editor": {
+                  "format": "auto"
+                },
+                "editorMode": "visual",
+                "gaode": {
+                  "key": "",
+                  "plugin": "AMap.Scale,AMap.ToolBar"
+                },
+                "getOption": "const series = context.panel.data.series.map((s) => {\n  const sData = s.fields.find((f) => f.type === 'number').values.buffer || s.fields.find((f) => f.type === 'number').values;\n  const sTime = s.fields.find((f) => f.type === 'time').values.buffer || s.fields.find((f) => f.type === 'time').values;\n  \n  return {\n    name: s.refId,\n    type: 'line',\n    showSymbol: false,\n    areaStyle: {\n      opacity: 0.1,\n    },\n    lineStyle: {\n      width: 1,\n    },\n    data: sData.map((d, i) => [sTime[i], d.toFixed(2)]),\n  };\n});\n\n/**\n * Enable Data Zoom by default\n */\nsetTimeout(() => context.panel.chart.dispatchAction({\n  type: 'takeGlobalCursor',\n  key: 'dataZoomSelect',\n  dataZoomSelectActive: true,\n}), 500);\n\n/**\n * Update Time Range on Zoom\n */\ncontext.panel.chart.on('datazoom', function (params) {\n  const startValue = params.batch[0]?.startValue;\n  const endValue = params.batch[0]?.endValue;\n  locationService.partial({ from: startValue, to: endValue });\n});\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: {\n    trigger: 'axis',\n  },\n  legend: {\n    left: '0',\n    bottom: '0',\n    data: context.panel.data.series.map((s) => s.refId),\n    textStyle: {\n      color: 'rgba(128, 128, 128, .9)',\n    },\n  },\n  toolbox: {\n    feature: {\n      dataZoom: {\n        yAxisIndex: 'none',\n        icon: {\n          zoom: 'path://',\n          back: 'path://',\n        },\n      },\n      saveAsImage: {},\n    }\n  },\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n  grid: {\n    left: '2%',\n    right: '2%',\n    top: '2%',\n    bottom: 24,\n    containLabel: true,\n  },\n  series,\n};",
+                "google": {
+                  "callback": "gmapReady",
+                  "key": ""
+                },
+                "map": "none",
+                "renderer": "canvas",
+                "themeEditor": {
+                  "config": "{}",
+                  "name": "default"
+                },
+                "visualEditor": {
+                  "code": "\ntry {\n  const panelData = context.panel.data;\n  if (!panelData || !panelData.series || panelData.series.length === 0) {\n    return { title: { text: 'Sem dados — selecione um repositório', left: 'center', top: 'center' } };\n  }\n\n  function toArr(field) {\n    if (!field) return [];\n    const v = field.values;\n    if (!v) return [];\n    if (v.buffer) return Array.from(new Float64Array(v.buffer));\n    if (Array.isArray(v)) return v;\n    if (typeof v.toArray === 'function') return v.toArray();\n    return Array.from(v);\n  }\n\n  const frame = panelData.series[0];\n  if (!frame || frame.fields.length === 0) {\n    return { title: { text: 'Query sem retorno', left: 'center', top: 'center' } };\n  }\n\n  const datetimes = toArr(frame.fields.find(f => f.name === 'datetime'));\n\n  const characteristics = [\n    { key: 'reliability', label: 'Confiabilidade', color: '#1D9E75', data: toArr(frame.fields.find(f => f.name === 'reliability')) },\n    { key: 'maintainability', label: 'Manutenibilidade', color: '#378ADD', data: toArr(frame.fields.find(f => f.name === 'maintainability')) },\n    { key: 'functional_suitability', label: 'Adequação Funcional', color: '#D85A30', data: toArr(frame.fields.find(f => f.name === 'functional_suitability')) },\n  ];\n\n  // releases da query B\n  let releases = [];\n  if (panelData.series.length > 1) {\n    const rf = panelData.series[1];\n    const rNames = toArr(rf.fields.find(f => f.name === 'release_name'));\n    const rDates = toArr(rf.fields.find(f => f.name === 'release_date'));\n    releases = rNames.map((name, i) => {\n      const target = String(rDates[i] || '').slice(0, 10);\n      let idx = datetimes.findIndex(d => String(d).slice(0, 10) >= target);\n      if (idx < 0) idx = datetimes.length - 1;\n      return { label: name, dateIndex: idx };\n    });\n  }\n\n  function msgPulse(scores, idxList) {\n    const SPS = 60;\n    const pts = [];\n    for (let ii = 0; ii < idxList.length - 1; ii++) {\n      const a = scores[idxList[ii]] ?? 0, b = scores[idxList[ii + 1]] ?? 0;\n      const delta = b - a, pk = delta * 2.2;\n      for (let s = 0; s < SPS; s++) {\n        const t = s / SPS;\n        let v;\n        if (t < 0.30) { v = a; }\n        else if (t < 0.42) { const p = (t - 0.30) / 0.12; v = a + pk * Math.sin(p * Math.PI * 0.5); }\n        else if (t < 0.56) { const p = (t - 0.42) / 0.14; v = a + pk * (1 - p); }\n        else if (t < 0.68) { const p = (t - 0.56) / 0.12; v = b - delta * 0.15 * Math.sin(p * Math.PI); }\n        else { v = b; }\n        pts.push(Math.max(0.01, Math.min(0.99, v)));\n      }\n    }\n    pts.push(Math.max(0.01, Math.min(0.99, scores[idxList[idxList.length - 1]] ?? 0)));\n    return pts;\n  }\n\n  const N = datetimes.length;\n  const idxList = Array.from({ length: N }, (_, i) => i);\n  const SPS = 60;\n  const nChars = characteristics.length;\n  const isDark = context.grafana.theme.isDark;\n  const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';\n  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';\n\n  const topPad = 4, bottomPad = 20, gap = 6;\n  const totalH = 100 - topPad - bottomPad;\n  const rowH = (totalH - gap * (nChars - 1)) / nChars;\n\n  const grids = characteristics.map((_, i) => ({\n    top: `${topPad + i * (rowH + gap)}%`,\n    height: `${rowH}%`,\n    left: '55px',\n    right: '12px',\n  }));\n\n  const xLabels = [];\n  idxList.forEach((idx, ii) => {\n    if (ii < idxList.length - 1) for (let s = 0; s < SPS; s++) xLabels.push(datetimes[idx]);\n    else xLabels.push(datetimes[idx]);\n  });\n\n  const xAxes = characteristics.map((_, i) => ({\n    type: 'category',\n    gridIndex: i,\n    data: xLabels,\n    axisLabel: {\n      show: i === nChars - 1,\n      color: textColor,\n      fontSize: 10,\n      formatter: v => v ? String(v).slice(5, 10).replace('-', '/') : '',\n      interval: SPS * Math.floor(N / 5) - 1,\n    },\n    axisLine: { lineStyle: { color: gridColor } },\n    splitLine: { show: false },\n  }));\n\n  const yAxes = characteristics.map((c, i) => ({\n    type: 'value',\n    gridIndex: i,\n    min: 0, max: 1,\n    interval: 0.5,\n    axisLabel: {\n      color: textColor, fontSize: 8,\n      formatter: v => v === 0 ? '0' : v === 0.5 ? '.5' : '1',\n    },\n    splitLine: { lineStyle: { color: gridColor } },\n    name: c.label,\n    nameLocation: 'middle',\n    nameGap: 42,\n    nameTextStyle: { color: c.color, fontSize: 11, fontWeight: 'bold' },\n  }));\n\n  const releaseMarkLines = releases.map(r => ({\n    xAxis: r.dateIndex * SPS,\n    label: { formatter: r.label, position: 'insideStartTop', fontSize: 8, fontWeight: 'bold', color: '#BA7517' },\n    lineStyle: { color: '#BA7517', type: 'dashed', width: 1 },\n  }));\n\n  const series = characteristics.map((c, i) => ({\n    name: c.label,\n    type: 'line',\n    xAxisIndex: i,\n    yAxisIndex: i,\n    smooth: false,\n    symbol: 'none',\n    lineStyle: { color: c.color, width: 1.8 },\n    data: msgPulse(c.data, idxList),\n    markLine: {\n      silent: true, symbol: 'none',\n      data: releaseMarkLines,\n    },\n    markPoint: {\n      symbol: 'circle', symbolSize: 7,\n      data: releases.map(r => ({\n        coord: [r.dateIndex * SPS, c.data[r.dateIndex] ?? 0],\n        itemStyle: { color: c.color },\n      })),\n    },\n  }));\n\n  return {\n    backgroundColor: 'transparent',\n    tooltip: {\n      trigger: 'axis',\n      axisPointer: { type: 'line' },\n      formatter: params => {\n        const p = params[0];\n        const charIdx = p.seriesIndex;\n        const measureIdx = Math.min(Math.floor(p.dataIndex / SPS), N - 1);\n        const c = characteristics[charIdx];\n        const v = c.data[measureIdx] ?? 0;\n        const prev = measureIdx > 0 ? (c.data[measureIdx - 1] ?? null) : null;\n        const delta = prev !== null ? v - prev : null;\n        const dt = datetimes[measureIdx];\n        const rel = releases.find(r => r.dateIndex === measureIdx);\n        let html = `<b>${dt}</b>`;\n        if (rel) html += `<br/><span style=\"color:#BA7517\">● ${rel.label}</span>`;\n        html += `<br/><span style=\"color:${c.color}\">■</span> ${c.label}: <b>${v.toFixed(2)}</b>`;\n        if (delta !== null) {\n          const col = delta >= 0 ? '#1D9E75' : '#E24B4A';\n          html += ` <span style=\"color:${col}\">${delta >= 0 ? '+' : ''}${delta.toFixed(2)}</span>`;\n        }\n        return html;\n      },\n    },\n    grid: grids,\n    xAxis: xAxes,\n    yAxis: yAxes,\n    series,\n  };\n} catch (e) {\n  return { title: { text: 'Erro: ' + e.message, left: 'center', top: 'center' } };\n}\n",
+                  "dataset": [],
+                  "series": []
+                }
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "kind": "GridLayout",
+      "spec": {
+        "items": [
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 14,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-1"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 14,
+              "width": 24,
+              "height": 14,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": [],
+    "liveNow": false,
+    "preload": false,
+    "tags": [
+      "measuresoftgram"
+    ],
+    "timeSettings": {
+      "timezone": "browser",
+      "from": "now-6M",
+      "to": "now",
+      "autoRefresh": "5m",
+      "autoRefreshIntervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "hideTimepicker": false,
+      "fiscalYearStartMonth": 0
+    },
+    "title": "Saúde de Qualidade por Repositório",
+    "variables": [
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "name": "repository",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "label": "Repositório",
+          "hide": "dontHide",
+          "refresh": "onTimeRangeChanged",
+          "skipUrlSync": false,
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana-postgresql-datasource",
+            "version": "v0",
+            "datasource": {
+              "name": "measuresoftgram-db"
+            },
+            "spec": {
+              "__legacyStringValue": "SELECT name AS __text, id::text AS __value FROM organizations_repository ORDER BY name"
+            }
+          },
+          "regex": "",
+          "regexApplyTo": "value",
+          "sort": "alphabeticalAsc",
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "allowCustomValue": true
+        }
+      }
+    ]
+  }
+}

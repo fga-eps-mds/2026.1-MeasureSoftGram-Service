@@ -16,6 +16,7 @@ class GrafanaDashboardSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     url = serializers.URLField()
     iframe_url = serializers.CharField()
+    grafana_url = serializers.URLField(required=False)  # URL direta do Grafana
     expires_at = serializers.DateTimeField()
     repository = serializers.SerializerMethodField()
 

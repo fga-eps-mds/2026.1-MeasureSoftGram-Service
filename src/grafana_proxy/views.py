@@ -121,12 +121,16 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
             uid=dashboard_uid, repository_id=int(repository_id) if repository_id else None
         )
 
+        # URL direta do Grafana (sem proxy, para iframe)
+        grafana_direct_url = f'http://localhost:3000{iframe_url}'
+
         response_data = {
             'dashboard_uid': dashboard_uid,
             'title': dashboard_data['dashboard']['title'],
             'description': dashboard_data['meta'].get('description', ''),
             'url': f'{base_url}/api/v1/grafana/embed/{dashboard_uid}/?token={signed_token}',
             'iframe_url': iframe_url,
+            'grafana_url': grafana_direct_url,  # URL direta do Grafana
             'expires_at': dashboard_signer.get_expiration_time(),
             'repository_id': int(repository_id) if repository_id else None,
         }
@@ -138,13 +142,15 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
     @action(detail=True, methods=['get'], url_path='embed', permission_classes=[AllowAny])
     def embed_dashboard(self, request, pk=None):
         """
-        Renderiza o dashboard do Grafana (proxy reverso).
+        Retorna URL direta do Grafana sem autenticação (anônimo).
 
         Este endpoint usa autenticação via token assinado na URL,
         não requer header Authorization.
 
         GET /api/v1/grafana/embed/{uid}/?token={signed_token}&repository_id=6
         """
+        from django.shortcuts import redirect
+
         dashboard_uid = pk
         signed_token = request.query_params.get('token')
 
@@ -165,26 +171,20 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Constrói URL do Grafana
+        # Constrói URL do Grafana (interno, docker network)
         iframe_url = self.grafana_client.build_dashboard_url(
             uid=dashboard_uid, repository_id=payload.get('repository_id')
         )
 
-        # Faz proxy reverso para o Grafana
-        grafana_url = f"{settings.GRAFANA_CONFIG['BASE_URL']}{iframe_url}"
+        # Redireciona para o Grafana na rede interna do Docker
+        # O Grafana está configurado com autenticação anônima habilitada
+        grafana_internal_url = f"http://grafana:3000{iframe_url}"
 
-        try:
-            response = requests.get(grafana_url, auth=self.grafana_client.auth, timeout=10)
-            response.raise_for_status()
+        # Para desenvolvimento, redireciona para localhost:3000
+        # Em produção, o Grafana deve estar na mesma rede Docker
+        grafana_url = f"http://localhost:3000{iframe_url}"
 
-            # Retorna HTML do Grafana
-            return HttpResponse(response.content, content_type='text/html', status=response.status_code)
-        except requests.RequestException as e:
-            logger.error(f'Erro ao fazer proxy para Grafana: {e}')
-            return Response(
-                {'detail': 'Error fetching dashboard from Grafana.'},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+        return redirect(grafana_url)
 
     @action(detail=False, methods=['get'], url_path='verify-token')
     def verify_token(self, request):

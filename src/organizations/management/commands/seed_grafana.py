@@ -8,11 +8,19 @@ Popula o banco com dados ricos para visualização no Grafana:
   - Goals por produto linkados ao admin
   - TSQMI com timestamps corretos e evolução coerente
   - Métricas por arquivo para análise de distribuição estatística
+  - Garante que TODAS as características sejam criadas para CADA data (evita NULL)
+
+IMPORTANTE: Este seed popula dados para os seguintes dashboards:
+  1. Visão Geral de Qualidade (dashboard-visao-geral.json)
+  2. ECG TSQMI - Pulso de Qualidade (dashboard-ecg-tsqmi.json)
+  3. Evolução Temporal (dashboard-evolucao.json)
+  4. Saúde de Qualidade por Repositório (dashboard-saude-qualidade-repositorio.json)
 
 Uso:
     python manage.py seed_grafana
     python manage.py seed_grafana --days 365
     python manage.py seed_grafana --repos "MeasureSoftGram-Service,MeasureSoftGram-Front"
+    python manage.py seed_grafana --clean-all  # Limpa e recria todos os dados
 """
 
 import json
@@ -100,6 +108,12 @@ class Command(BaseCommand):
             help='Apaga os TSQMI sem timestamps corretos antes de recriar',
         )
         parser.add_argument(
+            '--clean-all',
+            action='store_true',
+            default=False,
+            help='Apaga TODOS os dados de características calculadas antes de recriar (corrige valores NULL)',
+        )
+        parser.add_argument(
             '--grafana-url',
             type=str,
             default='http://localhost:3000',
@@ -121,6 +135,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.days = kwargs['days']
         self.clean_tsqmi = kwargs['clean_tsqmi']
+        self.clean_all = kwargs['clean_all']
         repo_filter = [r.strip() for r in kwargs['repos'].split(',') if r.strip()]
 
         self.admin = User.objects.filter(is_superuser=True).first()
@@ -134,6 +149,22 @@ class Command(BaseCommand):
         repos = Repository.objects.all()
         if repo_filter:
             repos = repos.filter(name__in=repo_filter)
+
+        # Limpeza global se solicitado
+        if self.clean_all:
+            self.stdout.write(self.style.WARNING('Limpando TODOS os dados de características calculadas...'))
+            deleted = CalculatedCharacteristic.objects.filter(repository__in=repos).delete()
+            self.stdout.write(f'  → {deleted[0]} características calculadas removidas')
+
+            deleted_measures = CalculatedMeasure.objects.filter(repository__in=repos).delete()
+            self.stdout.write(f'  → {deleted_measures[0]} medidas calculadas removidas')
+
+            deleted_subchars = CalculatedSubCharacteristic.objects.filter(repository__in=repos).delete()
+            self.stdout.write(f'  → {deleted_subchars[0]} subcaracterísticas calculadas removidas')
+
+            deleted_metrics = CollectedMetric.objects.filter(repository__in=repos).delete()
+            self.stdout.write(f'  → {deleted_metrics[0]} métricas coletadas removidas')
+            self.stdout.write('')
 
         self.stdout.write(f'Populando {repos.count()} repositórios com {self.days} dias de histórico...')
 
@@ -159,16 +190,24 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
 
     def _seed_repo(self, repo: Repository, profile: str):
-        timestamps = _make_timestamps(self.days, self.end_date)
+        # Gera timestamps para todo o período
+        all_timestamps = _make_timestamps(self.days, self.end_date)
+
+        # IMPORTANTE: Para o pulso ECG funcionar, características e TSQMI devem estar nas MESMAS datas
+        # Seleciona 10 timestamps espaçados uniformemente para TSQMI e características
+        TSQMI_MEASUREMENTS = 10
+        step = max(1, len(all_timestamps) // TSQMI_MEASUREMENTS)
+        tsqmi_timestamps = [all_timestamps[i * step] for i in range(TSQMI_MEASUREMENTS)]
 
         if self.clean_tsqmi:
             TSQMI.objects.filter(repository=repo).delete()
 
-        self._seed_collected_metrics(repo, timestamps)
-        self._seed_calculated_measures(repo, profile, timestamps)
-        self._seed_calculated_subchars(repo, profile, timestamps)
-        self._seed_calculated_chars(repo, profile, timestamps)
-        self._seed_tsqmi(repo, profile, timestamps)
+        self._seed_collected_metrics(repo, all_timestamps)
+        self._seed_calculated_measures(repo, profile, all_timestamps)
+        self._seed_calculated_subchars(repo, profile, all_timestamps)
+        # Criar características APENAS nas datas dos TSQMIs (10 datas)
+        self._seed_calculated_chars(repo, profile, tsqmi_timestamps)
+        self._seed_tsqmi(repo, profile, tsqmi_timestamps)
 
     def _seed_collected_metrics(self, repo: Repository, timestamps: list):
         """
@@ -246,9 +285,23 @@ class Command(BaseCommand):
         self.stdout.write(f'    CalculatedSubChar: +{len(to_create)}')
 
     def _seed_calculated_chars(self, repo: Repository, profile: str, timestamps: list):
+        """
+        Cria características calculadas usando exatamente os timestamps fornecidos.
+
+        IMPORTANTE: Os timestamps devem ser os mesmos usados para criar os TSQMIs,
+        garantindo que o dashboard de pulso ECG funcione corretamente (sem valores NULL).
+        """
         chars = list(SupportedCharacteristic.objects.all())
         if not chars:
             return
+
+        # IMPORTANTE: Garantir que temos exatamente 3 características
+        # Se não tivermos, o dashboard terá valores NULL
+        if len(chars) != 3:
+            self.stderr.write(
+                f'AVISO: Esperado 3 características, mas encontrado {len(chars)}. '
+                f'Isso pode causar valores NULL no dashboard!'
+            )
 
         # Cada característica tem sua própria "personalidade" de tendência
         char_profiles = {
@@ -259,46 +312,62 @@ class Command(BaseCommand):
 
         to_create = []
         for i, ts in enumerate(timestamps):
+            # Usar índice proporcional para manter a progressão da tendência
+            # Mapeia o índice atual para o intervalo completo de dias
+            day_idx = int((i / len(timestamps)) * self.days)
+
+            # Criar TODAS as características para CADA timestamp
+            # Isso evita valores NULL no dashboard quando agrupamos por data
             for char in chars:
                 sub_profile, offset = char_profiles.get(char.key, (profile, 0.0))
                 to_create.append(CalculatedCharacteristic(
                     characteristic=char,
-                    value=_trend_value(i, sub_profile, char_offset=offset),
+                    value=_trend_value(day_idx, sub_profile, char_offset=offset),
                     created_at=ts,
                     repository=repo,
                 ))
 
         CalculatedCharacteristic.objects.bulk_create(to_create, batch_size=1000)
-        self.stdout.write(f'    CalculatedChar: +{len(to_create)}')
+        expected = len(timestamps) * len(chars)
+        actual = len(to_create)
+        if expected != actual:
+            self.stderr.write(
+                f'AVISO: Esperado criar {expected} registros ({len(timestamps)} datas × {len(chars)} chars), '
+                f'mas criou {actual}!'
+            )
+        self.stdout.write(f'    CalculatedChar: +{len(to_create)} ({len(timestamps)} datas × {len(chars)} chars = PAREADO COM TSQMI)')
 
     def _seed_tsqmi(self, repo: Repository, profile: str, timestamps: list):
+        """
+        Cria TSQMIs usando exatamente os timestamps fornecidos.
+
+        IMPORTANTE: Os timestamps devem ser os mesmos usados para criar as características
+        calculadas, garantindo que o dashboard de pulso ECG funcione corretamente.
+        """
         if self.clean_tsqmi:
             existing = 0
         else:
             existing = TSQMI.objects.filter(repository=repo).count()
 
-        # IMPORTANTE: Usar apenas 10 medições para melhor visualização do pulso ECG
-        # Gera 10 timestamps espaçados uniformemente ao longo do período
-        TSQMI_MEASUREMENTS = 10
+        TSQMI_MEASUREMENTS = len(timestamps)  # Usar exatamente os timestamps fornecidos
 
         if existing >= TSQMI_MEASUREMENTS:
             self.stdout.write(f'    TSQMI: já tem {existing} registros, pulando')
             return
 
-        # Selecionar 10 timestamps espaçados uniformemente
-        step = max(1, len(timestamps) // TSQMI_MEASUREMENTS)
-        selected_timestamps = [timestamps[i * step] for i in range(TSQMI_MEASUREMENTS)]
-
         to_create = []
-        for i, ts in enumerate(selected_timestamps):
+        for i, ts in enumerate(timestamps):
+            # Usar índice proporcional para manter a progressão da tendência
+            # Mapeia o índice atual para o intervalo completo de dias
+            day_idx = int((i / len(timestamps)) * self.days)
             to_create.append(TSQMI(
-                value=_trend_value(i * step, profile),
+                value=_trend_value(day_idx, profile),
                 created_at=ts,
                 repository=repo,
             ))
 
         TSQMI.objects.bulk_create(to_create, batch_size=500)
-        self.stdout.write(f'    TSQMI: +{len(to_create)} (10 medições para pulso ECG)')
+        self.stdout.write(f'    TSQMI: +{len(to_create)} ({TSQMI_MEASUREMENTS} medições nas MESMAS datas das características)')
 
     # ------------------------------------------------------------------
     # Goals e Releases

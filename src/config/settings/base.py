@@ -88,6 +88,7 @@ APPLICATION_APPS = [
     "math_model",
     "utils",
     "releases",
+    "grafana_proxy",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + APPLICATION_APPS
@@ -310,3 +311,12 @@ CREATE_FAKE_DATA = os.getenv("CREATE_FAKE_DATA", "False").lower() in (
 
 # Maximum number of days without a new TSQMI calculation before the badge shows "N/A".
 BADGE_STALENESS_DAYS = int(os.getenv("BADGE_STALENESS_DAYS", "30"))
+
+# Grafana Proxy Configuration
+GRAFANA_CONFIG = {
+    'BASE_URL': os.getenv('GRAFANA_BASE_URL', 'http://grafana:3000'),
+    'USERNAME': os.getenv('GRAFANA_USERNAME', 'admin'),
+    'PASSWORD': os.getenv('GRAFANA_PASSWORD', 'admin123'),
+    'TIMEOUT': int(os.getenv('GRAFANA_TIMEOUT', '10')),
+    'TOKEN_MAX_AGE': int(os.getenv('GRAFANA_TOKEN_MAX_AGE', '3600')),  # 1 hora
+}

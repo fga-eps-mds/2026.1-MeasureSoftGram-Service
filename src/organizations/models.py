@@ -28,6 +28,9 @@ class Organization(models.Model):
         null=True,
         blank=True,
     )
+    github_org_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    github_org_name = models.CharField(max_length=255, null=True, blank=True)
+    avatar_url = models.URLField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.key:
@@ -120,10 +123,24 @@ class Repository(models.Model):
     )
 
     imported = models.BooleanField(default=False)
+    github_repo_id = models.BigIntegerField(null=True, blank=True)
+    github_full_name = models.CharField(max_length=255, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.key = slugify(self.name)
         self.key = f'{self.product.key}-{self.key}'
+
+        if self.platform == 'github' and self.url and not self.github_full_name:
+            from urllib.parse import urlparse
+            try:
+                parsed = urlparse(self.url)
+                if 'github.com' in parsed.netloc:
+                    parts = [p for p in parsed.path.split('/') if p]
+                    if len(parts) >= 2:
+                        self.github_full_name = f"{parts[0]}/{parts[1]}"
+            except Exception:
+                pass
+
         return super().save(*args, **kwargs)
 
     def __str__(self):

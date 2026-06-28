@@ -46,7 +46,7 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
         create_supported_characteristics(characteristics)
         characteristics_keys = [item['key'] for item in characteristics]
 
-        self.org = self.get_organization()
+        self.org = self.get_organization(add_user=False)
         self.product = self.get_product(self.org)
 
         create_a_releaseconfig(
@@ -63,6 +63,11 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
         self.password = 'testpass'
         self.user.set_password(self.password)
         self.user.save()
+
+        self.org.members.add(self.user)
+        self.org.admin = self.user
+        self.org.save()
+
         self.client.credentials(
             HTTP_AUTHORIZATION='Token '
             + Token.objects.create(user=self.user).key
@@ -272,3 +277,43 @@ class GoalEndpointsTestCase(APITestCaseExpanded):
                 self.assertEqual(
                     self.user.username, response.json()[i]['created_by']
                 )
+
+    def test_product_without_goal_returns_404(self):
+        self.product.goals.all().delete()
+        url = reverse(
+            'current-goal-list',
+            args=[self.org.id, self.product.id],
+        )
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()['detail'], 'This product does not have a goal.')
+
+    def test_compare_goals_with_release_id_query_param(self):
+        goal1 = Goal.objects.create(
+            created_at=date.today(),
+            created_by=self.user,
+            product=self.product,
+            data={
+                'reliability': 53,
+                'maintainability': 53,
+                'functional_suitability': 53,
+            },
+        )
+        Goal.objects.create(
+            created_at=date.today(),
+            created_by=self.user,
+            product=self.product,
+            data={
+                'reliability': 60,
+                'maintainability': 60,
+                'functional_suitability': 60,
+            },
+        )
+        url = reverse(
+            'all-goal-list',
+            args=[self.org.id, self.product.id],
+        )
+        response = self.client.get(f"{url}?release_id={goal1.id}", format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]['id'], goal1.id)

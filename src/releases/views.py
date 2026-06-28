@@ -6,6 +6,7 @@ from releases.serializers import (
 from releases.models import Release
 from goals.models import Goal
 from organizations.models import Repository
+from organizations.mixins import UserScopedMixin
 from characteristics.models import CalculatedCharacteristic
 from releases.service import (
     get_accomplished_values,
@@ -27,7 +28,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.transformations import diff
 
 
-class ReleaseModelViewSet(viewsets.ModelViewSet):
+class ReleaseModelViewSet(UserScopedMixin, viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
@@ -35,13 +36,13 @@ class ReleaseModelViewSet(viewsets.ModelViewSet):
     serializer_class = ReleaseSerializer
 
     def get_queryset(self):
-        product_key = self.kwargs['product_pk']
+        product = self.get_product()
 
-        return Release.objects.filter(product=product_key)
+        return Release.objects.filter(product=product)
 
     @action(detail=False, methods=['get'], url_path='is-valid')
     def check_release(self, request, *args, **kwargs):
-        product_key = self.kwargs['product_pk']
+        product = self.get_product()
 
         name_release = request.query_params.get('nome')
         init_date = request.query_params.get('dt-inicial')
@@ -57,7 +58,7 @@ class ReleaseModelViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         release = Release.objects.filter(
-            product=product_key,
+            product=product,
             release_name=name_release,
         ).first()
 
@@ -68,7 +69,7 @@ class ReleaseModelViewSet(viewsets.ModelViewSet):
             )
 
         release = Release.objects.filter(
-            product=product_key,
+            product=product,
             start_at__lte=final_date,
             end_at__gte=init_date,
         )

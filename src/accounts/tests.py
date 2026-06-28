@@ -276,3 +276,225 @@ class AccountsViews(APITestCaseExpanded):
         url = reverse('user-repos')
         response = self.client.get(url, {'code': 'any_code'}, format='json')
         self.assertEqual(response.status_code, 401)
+
+    @patch('accounts.views.requests.get')
+    def test_github_organizations_success(self, mock_get):
+        self.user.github_access_token = 'gh_token_123'
+        self.user.save()
+
+        def side_effect(url, headers=None):
+            resp = MagicMock()
+            resp.status_code = 200
+            if "api.github.com/user/orgs" in url:
+                resp.json.return_value = [
+                    {'id': 456, 'login': 'org2', 'avatar_url': 'http://avatar2', 'description': 'desc2'}
+                ]
+            else:
+                resp.json.return_value = {
+                    'id': 123, 'login': 'test-user', 'avatar_url': 'http://avatar1', 'bio': 'desc1'
+                }
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('github-organizations')
+        response = self.client.get(url, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]['github_org_name'], 'test-user')
+        self.assertEqual(response.json()[1]['github_org_name'], 'org2')
+
+    @patch('accounts.views.requests.post')
+    def test_github_validate_success(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 404  # Credenciais válidas, token dummy não encontrado
+        mock_post.return_value = mock_response
+
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['valid'])
+
+    @patch('accounts.views.requests.post')
+    def test_github_validate_bad_credentials(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 401  # Bad credentials
+        mock_post.return_value = mock_response
+
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['valid'])
+        self.assertEqual(response.json()['reason'], 'Invalid GitHub Client ID or Client Secret')
+
+    def test_github_validate_mismatch(self):
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'backend_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'frontend_client_id'}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['valid'])
+        self.assertEqual(response.json()['reason'], 'Client ID mismatch between frontend and backend')
+
+    def test_github_validate_not_configured(self):
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', ''), \
+             patch('django.conf.settings.GITHUB_SECRET', ''):
+            response = self.client.post(url, {'client_id': 'any_id'}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['valid'])
+        self.assertEqual(response.json()['reason'], 'Backend GitHub credentials are not configured')
+
+    def test_save_github_token_signal(self):
+        from accounts.signals import save_github_token
+        sociallogin = MagicMock()
+        sociallogin.account.provider = 'github'
+        sociallogin.token.token = 'new_github_token'
+        sociallogin.user = self.user
+
+        save_github_token(None, sociallogin)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.github_access_token, 'new_github_token')
+
+        # Test other provider
+        sociallogin_other = MagicMock()
+        sociallogin_other.account.provider = 'google'
+        save_github_token(None, sociallogin_other)
+
+    @patch('accounts.views.requests.get')
+    def test_github_organizations_with_social_token(self, mock_get):
+        from allauth.socialaccount.models import SocialAccount, SocialToken, SocialApp
+        self.user.github_access_token = None
+        self.user.save()
+
+        social_app = SocialApp.objects.create(
+            provider='github',
+            name='GitHub',
+            client_id='12345',
+            secret='54321',
+        )
+        social_account = SocialAccount.objects.create(
+            user=self.user,
+            provider='github',
+            uid='12345'
+        )
+        SocialToken.objects.create(
+            account=social_account,
+            app=social_app,
+            token='social-token-xyz'
+        )
+
+        def side_effect(url, headers=None):
+            resp = MagicMock()
+            resp.status_code = 200
+            if "api.github.com/user/orgs" in url:
+                resp.json.return_value = []
+            else:
+                resp.json.return_value = {
+                    'id': 123, 'login': 'test-user', 'avatar_url': 'http://avatar1', 'bio': 'desc1'
+                }
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('github-organizations')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]['github_org_name'], 'test-user')
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.github_access_token, 'social-token-xyz')
+
+    def test_github_organizations_no_token_at_all(self):
+        self.user.github_access_token = None
+        self.user.save()
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('github-organizations')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'GitHub account not linked or access token missing.')
+
+    @patch('accounts.views.requests.get')
+    def test_github_organizations_duplicate_org_id(self, mock_get):
+        self.user.github_access_token = 'gh_token_123'
+        self.user.save()
+
+        def side_effect(url, headers=None):
+            resp = MagicMock()
+            resp.status_code = 200
+            if "api.github.com/user/orgs" in url:
+                resp.json.return_value = [
+                    {'id': 123, 'login': 'test-user', 'avatar_url': 'http://avatar1', 'description': 'desc1'}
+                ]
+            else:
+                resp.json.return_value = {
+                    'id': 123, 'login': 'test-user', 'avatar_url': 'http://avatar1', 'bio': 'desc1'
+                }
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('github-organizations')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+
+    @patch('accounts.views.requests.get')
+    def test_github_organizations_fetch_failure(self, mock_get):
+        self.user.github_access_token = 'gh_token_123'
+        self.user.save()
+
+        def side_effect(url, headers=None):
+            resp = MagicMock()
+            resp.status_code = 401
+            resp.json.return_value = {'message': 'Bad credentials'}
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token '
+            + Token.objects.create(user=self.user).key
+        )
+        url = reverse('github-organizations')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['error'], 'Failed to fetch organizations from GitHub')
+
+    @patch('accounts.views.requests.post')
+    def test_github_validate_exception(self, mock_post):
+        mock_post.side_effect = Exception("Connection error")
+
+        url = reverse('github-validate')
+        with patch('django.conf.settings.GITHUB_CLIENT_ID', 'test_client_id'), \
+             patch('django.conf.settings.GITHUB_SECRET', 'test_secret'):
+            response = self.client.post(url, {'client_id': 'test_client_id'}, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['valid'])

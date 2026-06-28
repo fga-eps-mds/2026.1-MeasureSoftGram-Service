@@ -8,6 +8,7 @@ from metrics.serializers import (
     SupportedMetricSerializer,
 )
 from organizations.models import Repository
+from organizations.mixins import UserScopedMixin
 
 
 class SupportedMetricModelViewSet(
@@ -22,20 +23,12 @@ class SupportedMetricModelViewSet(
     serializer_class = SupportedMetricSerializer
 
 
-class RepositoryMetricsMixin:
+class RepositoryMetricsMixin(UserScopedMixin):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         repository = self.get_repository()
         serializer.save(repository=repository)
-
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
 
     def get_queryset(self):
         repository = self.get_repository()

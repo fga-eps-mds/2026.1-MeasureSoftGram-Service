@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 import utils
 from organizations.models import Product, Repository
+from organizations.mixins import UserScopedMixin
 from subcharacteristics.models import (
     CalculatedSubCharacteristic,
     SupportedSubCharacteristic,
@@ -29,15 +30,7 @@ class SupportedSubCharacteristicModelViewSet(
     serializer_class = SupportedSubCharacteristicSerializer
 
 
-class RepositorySubCharacteristicMixin:
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
-
+class RepositorySubCharacteristicMixin(UserScopedMixin):
     def get_queryset(self):
         repository = self.get_repository()
         qs = repository.calculated_subcharacteristics.all()

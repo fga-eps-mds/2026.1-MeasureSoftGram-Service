@@ -282,6 +282,43 @@ class RepositorySerializer(serializers.HyperlinkedModelSerializer):
 
         return attrs
 
+    def _get_github_auth_token(self, user):
+        if not user or not user.is_authenticated:
+            return None
+        token = getattr(user, 'github_access_token', None)
+        if not token:
+            from allauth.socialaccount.models import SocialToken
+            st = SocialToken.objects.filter(
+                account__user=user, account__provider='github'
+            ).first()
+            if st:
+                token = st.token
+                user.github_access_token = token
+                user.save()
+        return token
+
+    def _get_github_url_and_headers(self, parsed_url):
+        check_url = parsed_url.geturl()
+        headers = {}
+        if "github.com" not in parsed_url.netloc:
+            return check_url, headers
+
+        parts = [p for p in parsed_url.path.split('/') if p]
+        if len(parts) < 2:
+            return check_url, headers
+
+        owner, repo = parts[0], parts[1]
+        check_url = f"https://api.github.com/repos/{owner}/{repo}"
+        headers["Accept"] = "application/vnd.github.v3+json"
+
+        request = self.context.get('request')
+        user = request.user if request else None
+        token = self._get_github_auth_token(user)
+        if token:
+            headers["Authorization"] = f"token {token}"
+
+        return check_url, headers
+
     def validate_url(self, value):
         if value:
             parsed_url = urlparse(value)
@@ -290,8 +327,10 @@ class RepositorySerializer(serializers.HyperlinkedModelSerializer):
                     'The URL must start with http or https.'
                 )
 
+            check_url, headers = self._get_github_url_and_headers(parsed_url)
+
             try:
-                response = requests.head(value, timeout=5)
+                response = requests.head(check_url, headers=headers, timeout=5)
                 if response.status_code >= 400:
                     raise serializers.ValidationError(
                         "The repository's URL is not accessible."

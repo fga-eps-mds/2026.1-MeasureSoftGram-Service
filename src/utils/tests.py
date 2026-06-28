@@ -26,11 +26,17 @@ class APITestCaseExpanded(APITestCase):
         self,
         name='Test Organization',
         description='Test Organization Description',
+        add_user=True,
     ):
-        return Organization.objects.create(
+        org = Organization.objects.create(
             name=name,
             description=description,
         )
+        if add_user and hasattr(self, 'user') and self.user:
+            org.members.add(self.user)
+            org.admin = self.user
+            org.save()
+        return org
 
     def get_product(
         self,

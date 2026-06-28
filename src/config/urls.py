@@ -18,7 +18,7 @@ from metrics.views import SupportedMetricModelViewSet
 from organizations.routers.organizations import OrgRouter
 from organizations.routers.products import ProductRouter
 from organizations.routers.repos import RepoRouter
-from organizations.views import OrganizationViewSet
+from organizations.views import OrganizationViewSet, ImportOrganizationViewSet
 from subcharacteristics.views import SupportedSubCharacteristicModelViewSet
 
 
@@ -45,6 +45,7 @@ def register_supported_entities_endpoints(router):
 
 main_router = routers.DefaultRouter()
 register_supported_entities_endpoints(main_router)
+main_router.register('organizations/import', ImportOrganizationViewSet, basename='organizations-import')
 main_router.register('organizations', OrganizationViewSet)
 
 

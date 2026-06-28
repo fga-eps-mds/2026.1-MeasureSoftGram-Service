@@ -82,6 +82,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
+    github_access_token = models.CharField(max_length=255, blank=True, null=True)
+
     EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'username'
 

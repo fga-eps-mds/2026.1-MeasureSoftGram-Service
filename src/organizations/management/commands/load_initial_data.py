@@ -1,8 +1,9 @@
-# Python Imports
+﻿# Python Imports
 import contextlib
 import datetime as dt
 import logging
 import os
+import random
 
 # 3rd Party Imports
 import requests
@@ -51,6 +52,46 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+BADGE_DEMO_REPOSITORIES = [
+    {
+        'name': 'Badge Demo A',
+        'grade': 'A',
+        'value': 0.90,
+        'description': 'Repositório mockado para teste visual da badge A.',
+    },
+    {
+        'name': 'Badge Demo B',
+        'grade': 'B',
+        'value': 0.70,
+        'description': 'Repositório mockado para teste visual da badge B.',
+    },
+    {
+        'name': 'Badge Demo C',
+        'grade': 'C',
+        'value': 0.50,
+        'description': 'Repositório mockado para teste visual da badge C.',
+    },
+    {
+        'name': 'Badge Demo D',
+        'grade': 'D',
+        'value': 0.30,
+        'description': 'Repositório mockado para teste visual da badge D.',
+    },
+    {
+        'name': 'Badge Demo E',
+        'grade': 'E',
+        'value': 0.10,
+        'description': 'Repositório mockado para teste visual da badge E.',
+    },
+    {
+        'name': 'Badge Demo N-A',
+        'grade': 'N/A',
+        'value': None,
+        'description': 'Repositório mockado sem valor atual para testar badge N/A.',
+    },
+]
 
 
 class Command(BaseCommand):
@@ -192,21 +233,30 @@ class Command(BaseCommand):
 
         end_date = timezone.now()
         start_date = end_date - dt.timedelta(days=90)
+        total_seconds = int((end_date - start_date).total_seconds())
 
-        MIN_NUMBER_OF_CALCULATED_ENTITIES = 50
-        MIN_NUMBER = MIN_NUMBER_OF_CALCULATED_ENTITIES
-
+        MIN_NUMBER = 50
         fake_calculated_entities = []
 
         for entity in qs:
             qty = get_entity_qty(entity)
+            needed = MIN_NUMBER - qty
 
-            if qty < MIN_NUMBER:
-                for _ in range(MIN_NUMBER - qty):
-                    created_at = get_random_datetime(start_date, end_date)
-                    fake_calculated_entities.append(
-                        calculated_entity_factory(entity, created_at),
+            if needed <= 0:
+                continue
+
+            step = total_seconds // needed
+            for i in range(needed):
+                jitter = random.randint(-(step // 4), step // 4)
+                offset = max(0, min(step * i + jitter, total_seconds))
+                created_at = timezone.make_aware(
+                    dt.datetime.fromtimestamp(
+                        int(start_date.timestamp()) + offset
                     )
+                )
+                fake_calculated_entities.append(
+                    calculated_entity_factory(entity, created_at),
+                )
 
         bulk_create_klass.objects.bulk_create(fake_calculated_entities)
 
@@ -240,11 +290,18 @@ class Command(BaseCommand):
 
     def create_fake_calculated_measures(self, repository):
         qs = SupportedMeasure.objects.all()
+        current_entity = [None]
+        state = [random.uniform(0.5, 0.85)]
 
         def calculated_entity_factory(entity, created_at):
+            if entity != current_entity[0]:
+                current_entity[0] = entity
+                state[0] = random.uniform(0.5, 0.85)
+            val = state[0]
+            state[0] = max(0.05, min(0.95, state[0] + random.uniform(-0.04, 0.04)))
             return CalculatedMeasure(
                 measure=entity,
-                value=get_random_value('PERCENT'),
+                value=val,
                 created_at=created_at,
                 repository=repository,
             )
@@ -354,11 +411,18 @@ class Command(BaseCommand):
         qs = SupportedCharacteristic.objects.annotate(
             qty=Count('calculated_characteristics'),
         )
+        current_entity = [None]
+        state = [random.uniform(0.5, 0.85)]
 
         def calculated_entity_factory(entity, created_at):
+            if entity != current_entity[0]:
+                current_entity[0] = entity
+                state[0] = random.uniform(0.5, 0.85)
+            val = state[0]
+            state[0] = max(0.05, min(0.95, state[0] + random.uniform(-0.04, 0.04)))
             return CalculatedCharacteristic(
                 characteristic=entity,
-                value=get_random_value('PERCENT'),
+                value=val,
                 created_at=created_at,
                 repository=repository,
             )
@@ -379,11 +443,18 @@ class Command(BaseCommand):
         qs = SupportedSubCharacteristic.objects.annotate(
             qty=Count('calculated_subcharacteristics'),
         )
+        current_entity = [None]
+        state = [random.uniform(0.5, 0.85)]
 
         def calculated_entity_factory(entity, created_at):
+            if entity != current_entity[0]:
+                current_entity[0] = entity
+                state[0] = random.uniform(0.5, 0.85)
+            val = state[0]
+            state[0] = max(0.05, min(0.95, state[0] + random.uniform(-0.04, 0.04)))
             return CalculatedSubCharacteristic(
                 subcharacteristic=entity,
-                value=get_random_value('PERCENT'),
+                value=val,
                 created_at=created_at,
                 repository=repository,
             )
@@ -408,6 +479,8 @@ class Command(BaseCommand):
         )
 
     def create_a_goal(self, product: Product):
+        if product.goals.exists():
+            return
         pre_config = product.release_configuration.first()
         data = get_random_goal_data(pre_config)
         serializer = GoalSerializer(data=data)
@@ -419,7 +492,9 @@ class Command(BaseCommand):
 
         serializer.context['view'] = MockView
         serializer.is_valid(raise_exception=True)
-        serializer.save(product=product)
+        user_model = get_user_model()
+        admin = user_model.objects.filter(is_superuser=True).first()
+        serializer.save(product=product, created_by=admin)
 
     def create_fake_tsqmi_data(self, repository):
         if self.fake_data is False and settings.CREATE_FAKE_DATA is False:
@@ -432,15 +507,22 @@ class Command(BaseCommand):
         if qs.count() >= MIN_NUMBER:
             return
 
-        TSQMI.objects.bulk_create(
-            [
-                TSQMI(
-                    value=get_random_value('PERCENT'),
-                    repository=repository,
-                )
-                for _ in range(MIN_NUMBER - qs.count())
-            ]
-        )
+        needed = MIN_NUMBER - qs.count()
+        end_date = timezone.now()
+        start_date = end_date - dt.timedelta(days=90)
+        total_seconds = int((end_date - start_date).total_seconds())
+        step = total_seconds // needed
+        val = random.uniform(0.5, 0.85)
+        tsqmi_list = []
+        for i in range(needed):
+            jitter = random.randint(-(step // 4), step // 4)
+            offset = max(0, min(step * i + jitter, total_seconds))
+            created_at = timezone.make_aware(
+                dt.datetime.fromtimestamp(int(start_date.timestamp()) + offset)
+            )
+            tsqmi_list.append(TSQMI(value=val, repository=repository, created_at=created_at))
+            val = max(0.05, min(0.95, val + random.uniform(-0.04, 0.04)))
+        TSQMI.objects.bulk_create(tsqmi_list)
 
     def create_fake_organizations(self):
         organizations = [
@@ -615,12 +697,80 @@ class Command(BaseCommand):
                 continue
             repository.save()
 
+    def create_badge_demo_repositories(self):
+        organization, _ = Organization.objects.update_or_create(
+            name='Badge Demo Organization',
+            defaults={
+                'description': (
+                    'Organização mockada para validar visualmente as badges '
+                    'A, B, C, D, E e N/A.'
+                ),
+            },
+        )
+
+        product, _ = Product.objects.get_or_create(
+            name='Badge Demo Product',
+            organization=organization,
+            defaults={
+                'description': (
+                    'Produto mockado com um repositório para cada tipo de '
+                    'badge suportada pelo sistema.'
+                ),
+            },
+        )
+
+        repositories = {}
+        for repo_data in BADGE_DEMO_REPOSITORIES:
+            repository, _ = Repository.objects.update_or_create(
+                name=repo_data['name'],
+                product=product,
+                defaults={
+                    'description': repo_data['description'],
+                    'platform': 'github',
+                    'imported': True,
+                },
+            )
+            repositories[repo_data['grade']] = repository
+
+        return repositories
+
+    def create_badge_demo_values(self, repositories):
+        characteristics = list(SupportedCharacteristic.objects.all())
+        created_at = timezone.now()
+
+        for repo_data in BADGE_DEMO_REPOSITORIES:
+            repository = repositories[repo_data['grade']]
+
+            repository.calculated_tsqmis.all().delete()
+            repository.calculated_characteristics.all().delete()
+
+            if repo_data['value'] is None:
+                continue
+
+            TSQMI.objects.create(
+                value=repo_data['value'],
+                repository=repository,
+                created_at=created_at,
+            )
+
+            CalculatedCharacteristic.objects.bulk_create(
+                [
+                    CalculatedCharacteristic(
+                        characteristic=characteristic,
+                        value=repo_data['value'],
+                        created_at=created_at,
+                        repository=repository,
+                    )
+                    for characteristic in characteristics
+                ]
+            )
+
     def handle(self, *args, **kwargs):
         self.fake_data = kwargs.get('fake_data')
 
-        User = get_user_model()
+        user_model = get_user_model()
         with contextlib.suppress(IntegrityError):
-            User.objects.create_superuser(
+            user_model.objects.create_superuser(
                 username=os.getenv('SUPERADMIN_USERNAME', 'admin'),
                 email=os.getenv('SUPERADMIN_EMAIL', 'admin@admin.com'),
                 password=os.getenv('SUPERADMIN_PASSWORD', 'admin'),
@@ -636,15 +786,18 @@ class Command(BaseCommand):
         self.create_fake_products()
         self.create_fake_repositories()
 
-        repositories = Repository.objects.all()
-
         if settings.CREATE_FAKE_DATA or self.fake_data:
+            badge_demo_repositories = self.create_badge_demo_repositories()
+            repositories = Repository.objects.all()
+
             for repository in repositories:
                 self.create_fake_collected_metrics(repository)
                 self.create_fake_calculated_measures(repository)
                 self.create_fake_calculated_subcharacteristics(repository)
                 self.create_fake_calculated_characteristics(repository)
                 self.create_fake_tsqmi_data(repository)
+
+            self.create_badge_demo_values(badge_demo_repositories)
 
         products = Product.objects.all()
 

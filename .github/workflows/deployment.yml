@@ -1,8 +1,11 @@
-name: Deploy Service
+name: Deploy Service (EC2 legado - DESATIVADO)
 
+# DESATIVADO: a producao migrou para a box LAPPIS (deploy-prod.yml).
+# O trigger automatico em push develop foi removido para o deploy do EC2
+# (epsmsg.shop) nao competir com o novo deploy. Mantido como
+# workflow_dispatch para rollback manual de emergencia ao EC2, se preciso.
 on:
-  push:
-    branches: [ develop ]
+  workflow_dispatch:
 
 jobs:
   Deploy:

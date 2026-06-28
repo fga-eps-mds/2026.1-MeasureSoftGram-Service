@@ -15,6 +15,7 @@ from entity_trees.serializers import (
     pre_config_to_entity_tree,
 )
 from organizations.models import Product
+from organizations.mixins import UserScopedMixin
 from release_configuration.models import ReleaseConfiguration
 
 
@@ -44,6 +45,7 @@ class SupportedEntitiesRelationshipTreeViewSet(
 
 
 class ReleaseConfigurationEntitiesRelationshipTreeViewSet(
+    UserScopedMixin,
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -54,13 +56,6 @@ class ReleaseConfigurationEntitiesRelationshipTreeViewSet(
 
     serializer_class = CharacteristicEntityRelationshipTreeSerializer
     queryset = SupportedCharacteristic.objects.all()
-
-    def get_product(self):
-        return get_object_or_404(
-            Product,
-            id=self.kwargs['product_pk'],
-            organization_id=self.kwargs['organization_pk'],
-        )
 
     def list(self, request, *args, **kwargs):
         product = self.get_product()

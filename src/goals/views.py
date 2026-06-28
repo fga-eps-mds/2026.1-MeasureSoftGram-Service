@@ -10,10 +10,12 @@ from goals.serializers import (
     ReleasesSerializer,
 )
 from organizations.models import Product
+from organizations.mixins import UserScopedMixin
 from accounts.models import CustomUser
 
 
 class GoalModelViewSetMixin(
+    UserScopedMixin,
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -40,11 +42,7 @@ class GoalModelViewSetMixin(
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 
     def list(self, request, *args, **kwargs):
-        product = get_object_or_404(
-            Product,
-            pk=kwargs['product_pk'],
-            organization_id=kwargs['organization_pk'],
-        )
+        product = self.get_product()
         latest_goal = self.get_goals(product)
 
         if not latest_goal:
@@ -73,6 +71,7 @@ class CompareGoalsModelViewSet(GoalModelViewSetMixin):
 
 
 class CreateGoalModelViewSet(
+    UserScopedMixin,
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -82,13 +81,6 @@ class CreateGoalModelViewSet(
     def get_user(self):
         queryset = CustomUser.objects.all()
         return get_object_or_404(queryset, username=self.request.user)
-
-    def get_product(self):
-        return get_object_or_404(
-            Product,
-            id=self.kwargs['product_pk'],
-            organization_id=self.kwargs['organization_pk'],
-        )
 
     def perform_create(self, serializer):
         product = self.get_product()

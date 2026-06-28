@@ -65,7 +65,7 @@ def create_balance_matrix(
                 and target_characteristic in filtered_balance_matrix
             ]
         )
-    BalanceMatrix.objects.bulk_create(to_create)
+    BalanceMatrix.objects.bulk_create(to_create, ignore_conflicts=True)
 
 
 def force_the_sum_to_equal_100(entities_data: dict):

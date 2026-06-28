@@ -16,31 +16,18 @@ from characteristics.serializers import (
     SupportedCharacteristicSerializer,
 )
 from organizations.models import Product, Repository
+from organizations.mixins import UserScopedMixin
 from release_configuration.models import ReleaseConfiguration
 from utils.exceptions import SubCharacteristicNotDefinedInReleaseConfigurationuration
 
 
 class CalculateCharacteristicViewSet(
+    UserScopedMixin,
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
     serializer_class = CharacteristicsCalculationsRequestSerializer
     queryset = SupportedCharacteristic.objects.all()
-
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
-
-    def get_product(self):
-        return get_object_or_404(
-            Product,
-            id=self.kwargs['product_pk'],
-            organization_id=self.kwargs['organization_pk'],
-        )
 
 
 class SupportedCharacteristicModelViewSet(
@@ -82,15 +69,7 @@ class BalanceMatrixViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class RepositoryCharacteristicMixin:
-    def get_repository(self):
-        return get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
-
+class RepositoryCharacteristicMixin(UserScopedMixin):
     def get_queryset(self):
         repository = self.get_repository()
         qs = repository.calculated_characteristics.all()
@@ -113,17 +92,6 @@ class LatestCalculatedCharacteristicModelViewSet(
     )
     serializer_class = LatestCalculatedCharacteristicSerializer
 
-    def get_queryset(self):
-        repository = get_object_or_404(
-            Repository,
-            id=self.kwargs['repository_pk'],
-            product_id=self.kwargs['product_pk'],
-            product__organization_id=self.kwargs['organization_pk'],
-        )
-        qs = repository.calculated_characteristics.all()
-        qs = qs.values_list('characteristic', flat=True).distinct()
-        return SupportedCharacteristic.objects.filter(id__in=qs)
-
 
 class CalculatedCharacteristicHistoryModelViewSet(
     RepositoryCharacteristicMixin,
@@ -139,3 +107,50 @@ class CalculatedCharacteristicHistoryModelViewSet(
         'calculated_characteristics'
     )
     serializer_class = CalculatedCharacteristicHistorySerializer
+
+
+class LatestCalculatedCharacteristicBadgeViewSet(
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Endpoint público que retorna uma badge SVG com o grau (A–E)
+    da última característica calculada para o repositório.
+
+    URL: .../latest-values/characteristics/{characteristic_key}/badge/
+    """
+
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = LatestCalculatedCharacteristicSerializer
+
+    def get_repository(self):
+        return get_object_or_404(
+            Repository,
+            id=self.kwargs['repository_pk'],
+            product_id=self.kwargs['product_pk'],
+            product__organization_id=self.kwargs['organization_pk'],
+        )
+
+    def list(self, request, *args, **kwargs):
+        from utils.badge import is_stale, render_badge_svg, render_stale_badge_svg
+
+        repository = self.get_repository()
+        characteristic_key = self.kwargs.get('characteristic_key')
+
+        characteristic = get_object_or_404(
+            SupportedCharacteristic,
+            key=characteristic_key,
+        )
+
+        latest = (
+            repository.calculated_characteristics
+            .filter(characteristic=characteristic)
+            .first()
+        )
+
+        label = characteristic.name
+        if latest is None or is_stale(latest.created_at):
+            return render_stale_badge_svg(label)
+
+        return render_badge_svg(label, latest.value)

@@ -75,7 +75,7 @@
                         "editorMode": "code",
                         "format": "table",
                         "rawQuery": true,
-                        "rawSql": " SELECT\n    r.name as name,\n    t.created_at as datetime,\n    t.value as tsqmi\n  FROM tsqmi_tsqmi t\n  JOIN organizations_repository r ON r.id = t.repository_id\n  WHERE (\n    CASE\n      WHEN '${date_from}' != '' AND '${date_to}' != '' THEN\n        t.created_at::date BETWEEN '${date_from}'::date AND '${date_to}'::date\n      WHEN '${date_from}' != '' THEN\n        t.created_at::date >= '${date_from}'::date\n      WHEN '${date_to}' != '' THEN\n        t.created_at::date <= '${date_to}'::date\n      ELSE TRUE\n    END\n  )\n  ORDER BY t.created_at\n",
+                        "rawSql": " SELECT\n    r.name as name,\n    t.created_at as datetime,\n    t.value as tsqmi\n  FROM tsqmi_tsqmi t\n  JOIN organizations_repository r ON r.id = t.repository_id\n  WHERE r.product_id = '${product}'::integer\n  AND (\n    CASE\n      WHEN '${date_from}' != '' AND '${date_to}' != '' THEN\n        t.created_at::date BETWEEN '${date_from}'::date AND '${date_to}'::date\n      WHEN '${date_from}' != '' THEN\n        t.created_at::date >= '${date_from}'::date\n      WHEN '${date_to}' != '' THEN\n        t.created_at::date <= '${date_to}'::date\n      ELSE TRUE\n    END\n  )\n  ORDER BY t.created_at",
                         "sql": {
                           "columns": [
                             {
@@ -245,12 +245,26 @@
     "title": "Dashboard de Pulso",
     "variables": [
       {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "product",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "query": "",
+          "label": "Produto",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      },
+      {
         "kind": "QueryVariable",
         "spec": {
           "name": "repository",
           "current": {
-            "text": "2022-1-MeasureSoftGram-CLI",
-            "value": "9"
+            "text": "",
+            "value": ""
           },
           "label": "Repositório",
           "hide": "dontHide",
@@ -267,9 +281,9 @@
               "dataset": "postgres",
               "editorMode": "code",
               "format": "table",
-              "query": "SELECT name AS __text, id::text AS __value FROM organizations_repository ORDER BY name",
+              "query": "SELECT name AS __text, id::text AS __value FROM organizations_repository WHERE product_id = '${product}'::integer ORDER BY name",
               "rawQuery": true,
-              "rawSql": "SELECT name AS __text, id::text AS __value FROM organizations_repository ORDER BY name",
+              "rawSql": "SELECT name AS __text, id::text AS __value FROM organizations_repository WHERE product_id = '${product}'::integer ORDER BY name",
               "refId": "SQLVariableQueryEditor-VariableQuery",
               "sql": {
                 "columns": [
@@ -294,7 +308,7 @@
           "regex": "",
           "regexApplyTo": "value",
           "sort": "disabled",
-          "definition": "SELECT name AS __text, id::text AS __value FROM organizations_repository ORDER BY name",
+          "definition": "SELECT name AS __text, id::text AS __value FROM organizations_repository WHERE product_id = '${product}'::integer ORDER BY name",
           "options": [],
           "multi": false,
           "includeAll": false,

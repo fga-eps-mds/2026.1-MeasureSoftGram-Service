@@ -12,9 +12,9 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from organizations.models import Repository
+from organizations.models import Product, Repository
 
-from .permissions import CanAccessDashboard
+from .permissions import CanAccessDashboard, CanAccessProduct
 from .serializers import (
     GrafanaDashboardListSerializer,
     GrafanaDashboardSerializer,
@@ -69,7 +69,7 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
                     'title': dash['title'],
                     'description': dash.get('description', ''),
                     'tags': dash.get('tags', []),
-                    'requires_repository': self._dashboard_requires_repository(dash['uid']),
+                    'has_repo_selector': self._dashboard_has_repo_selector(dash['uid']),
                 }
             )
 
@@ -81,48 +81,66 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
         """
         Obtém URL assinada para acessar um dashboard específico.
 
-        GET /api/v1/grafana/dashboard/{uid}/?repository_id=6
+        GET /api/v1/grafana/dashboard/{uid}/?product_id=3
+        GET /api/v1/grafana/dashboard/{uid}/?product_id=3&repository_id=6
         """
         dashboard_uid = pk
+        product_id = request.query_params.get('product_id')
         repository_id = request.query_params.get('repository_id')
+
+        if not product_id:
+            return Response(
+                {'detail': 'product_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Valida que o dashboard existe
         dashboard_data = self.grafana_client.get_dashboard_by_uid(dashboard_uid)
         if not dashboard_data:
             return Response({'detail': 'Dashboard not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Valida se requer repository_id
-        requires_repo = self._dashboard_requires_repository(dashboard_uid)
-        if requires_repo and not repository_id:
+        # Valida acesso ao produto
+        product_permission = CanAccessProduct()
+        if not product_permission.has_permission(request, self):
             return Response(
-                {'detail': 'repository_id is required for this dashboard.'},
-                status=status.HTTP_400_BAD_REQUEST,
+                {'detail': 'You do not have permission to access this product.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Valida acesso ao repositório
+        # Valida acesso ao repositório (quando fornecido)
         if repository_id:
-            permission = CanAccessDashboard()
-            if not permission.has_permission(request, self):
+            repo_permission = CanAccessDashboard()
+            if not repo_permission.has_permission(request, self):
                 return Response(
                     {'detail': 'You do not have permission to access this repository.'},
                     status=status.HTTP_403_FORBIDDEN,
+                )
+            # Garante que o repositório pertence ao produto informado
+            if not Repository.objects.filter(
+                id=repository_id, product_id=product_id
+            ).exists():
+                return Response(
+                    {'detail': 'Repository does not belong to the specified product.'},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         # Gera token assinado
         signed_token = dashboard_signer.sign_token(
             user_id=request.user.id,
             dashboard_uid=dashboard_uid,
+            product_id=int(product_id),
             repository_id=int(repository_id) if repository_id else None,
         )
 
         # Constrói URLs
-        base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+        base_url = request.build_absolute_uri('/')[:-1]
         iframe_url = self.grafana_client.build_dashboard_url(
-            uid=dashboard_uid, repository_id=int(repository_id) if repository_id else None
+            uid=dashboard_uid,
+            product_id=int(product_id),
+            repository_id=int(repository_id) if repository_id else None,
         )
 
-        # URL direta do Grafana (sem proxy, para iframe)
-        grafana_direct_url = f'http://localhost:3000{iframe_url}'
+        grafana_direct_url = f'http://localhost:5000{iframe_url}'
 
         response_data = {
             'dashboard_uid': dashboard_uid,
@@ -130,8 +148,9 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
             'description': dashboard_data['meta'].get('description', ''),
             'url': f'{base_url}/api/v1/grafana/embed/{dashboard_uid}/?token={signed_token}',
             'iframe_url': iframe_url,
-            'grafana_url': grafana_direct_url,  # URL direta do Grafana
+            'grafana_url': grafana_direct_url,
             'expires_at': dashboard_signer.get_expiration_time(),
+            'product_id': int(product_id),
             'repository_id': int(repository_id) if repository_id else None,
         }
 
@@ -171,19 +190,14 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Constrói URL do Grafana (interno, docker network)
+        # Constrói URL do Grafana com filtros de produto e repositório
         iframe_url = self.grafana_client.build_dashboard_url(
-            uid=dashboard_uid, repository_id=payload.get('repository_id')
+            uid=dashboard_uid,
+            product_id=payload.get('product_id'),
+            repository_id=payload.get('repository_id'),
         )
 
-        # Redireciona para o Grafana na rede interna do Docker
-        # O Grafana está configurado com autenticação anônima habilitada
-        grafana_internal_url = f"http://grafana:3000{iframe_url}"
-
-        # Para desenvolvimento, redireciona para localhost:3000
-        # Em produção, o Grafana deve estar na mesma rede Docker
-        grafana_url = f"http://localhost:3000{iframe_url}"
-
+        grafana_url = f"http://localhost:5000{iframe_url}"
         return redirect(grafana_url)
 
     @action(detail=False, methods=['get'], url_path='verify-token')
@@ -215,13 +229,14 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
         serializer = TokenVerifySerializer({'valid': True, 'payload': payload, 'time_remaining': time_remaining})
         return Response(serializer.data)
 
-    def _dashboard_requires_repository(self, dashboard_uid: str) -> bool:
+    def _dashboard_has_repo_selector(self, dashboard_uid: str) -> bool:
         """
-        Verifica se o dashboard requer repository_id.
+        Indica se o dashboard expõe um seletor de repositório na UI do Grafana.
+        Usado para informar o frontend se deve exibir um pre-seletor de repositório.
         """
-        # Dashboards que requerem repository_id
-        requires_repo_dashboards = [
-            'saude-qualidade-repo',
-            '841fdfc2-e393-4319-8695-50e0460ca9cd',  # UID alternativo
+        dashboards_with_repo_selector = [
+            'dashboard-evolucao',
+            'dashboard-saude-qualidade-repositorio',
+            'dashboard-ecg-tsqmi',
         ]
-        return dashboard_uid in requires_repo_dashboards
+        return any(uid in dashboard_uid for uid in dashboards_with_repo_selector)

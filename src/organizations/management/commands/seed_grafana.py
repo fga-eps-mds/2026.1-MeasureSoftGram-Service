@@ -116,8 +116,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--grafana-url',
             type=str,
-            default='http://localhost:3000',
-            help='URL base do Grafana (default: http://localhost:3000)',
+            default='http://localhost:5000',
+            help='URL base do Grafana (default: http://localhost:5000)',
         )
         parser.add_argument(
             '--grafana-user',

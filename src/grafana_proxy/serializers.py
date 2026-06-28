@@ -16,18 +16,15 @@ class GrafanaDashboardSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     url = serializers.URLField()
     iframe_url = serializers.CharField()
-    grafana_url = serializers.URLField(required=False)  # URL direta do Grafana
+    grafana_url = serializers.URLField(required=False)
     expires_at = serializers.DateTimeField()
+    product_id = serializers.IntegerField()
     repository = serializers.SerializerMethodField()
 
     def get_repository(self, obj):
-        """
-        Retorna dados do repositório se disponível.
-        """
         repository_id = obj.get('repository_id')
         if not repository_id:
             return None
-
         try:
             repo = Repository.objects.get(id=repository_id)
             return {'id': repo.id, 'name': repo.name}
@@ -44,7 +41,7 @@ class GrafanaDashboardListSerializer(serializers.Serializer):
     title = serializers.CharField()
     description = serializers.CharField(required=False, allow_blank=True)
     tags = serializers.ListField(child=serializers.CharField())
-    requires_repository = serializers.BooleanField()
+    has_repo_selector = serializers.BooleanField()
 
 
 class TokenVerifySerializer(serializers.Serializer):

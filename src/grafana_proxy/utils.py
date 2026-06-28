@@ -23,7 +23,11 @@ class DashboardTokenSigner:
         self.max_age = settings.GRAFANA_CONFIG.get('TOKEN_MAX_AGE', 3600)  # 1h
 
     def sign_token(
-        self, user_id: int, dashboard_uid: str, repository_id: Optional[int] = None
+        self,
+        user_id: int,
+        dashboard_uid: str,
+        product_id: int,
+        repository_id: Optional[int] = None,
     ) -> str:
         """
         Cria um token assinado para acesso ao dashboard.
@@ -31,7 +35,8 @@ class DashboardTokenSigner:
         Args:
             user_id: ID do usuário
             dashboard_uid: UID do dashboard
-            repository_id: ID do repositório (opcional)
+            product_id: ID do produto (obrigatório — define o escopo de dados)
+            repository_id: ID do repositório (opcional — pré-seleciona no Grafana)
 
         Returns:
             str: Token assinado
@@ -39,6 +44,7 @@ class DashboardTokenSigner:
         payload = {
             'user_id': user_id,
             'dashboard_uid': dashboard_uid,
+            'product_id': product_id,
             'repository_id': repository_id,
             'issued_at': datetime.utcnow().isoformat(),
         }

@@ -279,7 +279,7 @@
                         "editorMode": "code",
                         "format": "time_series",
                         "rawQuery": true,
-                        "rawSql": "SELECT NOW() as time, r.name as metric, t.value FROM tsqmi_tsqmi t JOIN organizations_repository r ON r.id = t.repository_id WHERE t.id IN (SELECT DISTINCT ON (repository_id) id FROM tsqmi_tsqmi ORDER BY repository_id, created_at DESC)",
+                        "rawSql": "SELECT NOW() as time, r.name as metric, t.value\nFROM tsqmi_tsqmi t\nJOIN organizations_repository r ON r.id = t.repository_id\nWHERE t.id IN (\n  SELECT DISTINCT ON (repository_id) id\n  FROM tsqmi_tsqmi\n  ORDER BY repository_id, created_at DESC\n)\nAND r.product_id = '${product}'::integer",
                         "sql": {
                           "columns": [
                             {
@@ -392,7 +392,7 @@
                       },
                       "spec": {
                         "format": "time_series",
-                        "rawSql": "SELECT NOW() as time, COUNT(*) as value FROM measures_calculatedmeasure"
+                        "rawSql": "SELECT NOW() as time, COUNT(*) as value\nFROM measures_calculatedmeasure cm\nJOIN organizations_repository r ON r.id = cm.repository_id\nWHERE r.product_id = '${product}'::integer"
                       }
                     },
                     "refId": "A",
@@ -476,7 +476,7 @@
                       },
                       "spec": {
                         "format": "time_series",
-                        "rawSql": "SELECT NOW() as time, COUNT(*) as value FROM metrics_collectedmetric"
+                        "rawSql": "SELECT NOW() as time, COUNT(*) as value\nFROM metrics_collectedmetric cm\nJOIN organizations_repository r ON r.id = cm.repository_id\nWHERE r.product_id = '${product}'::integer"
                       }
                     },
                     "refId": "A",
@@ -560,7 +560,7 @@
                       },
                       "spec": {
                         "format": "time_series",
-                        "rawSql": "SELECT NOW() as time, COUNT(DISTINCT repository_id) as value FROM tsqmi_tsqmi"
+                        "rawSql": "SELECT NOW() as time, COUNT(DISTINCT t.repository_id) as value\nFROM tsqmi_tsqmi t\nJOIN organizations_repository r ON r.id = t.repository_id\nWHERE r.product_id = '${product}'::integer"
                       }
                     },
                     "refId": "A",
@@ -644,7 +644,7 @@
                       },
                       "spec": {
                         "format": "time_series",
-                        "rawSql": "SELECT NOW() as time, COUNT(DISTINCT path) as value FROM metrics_collectedmetric WHERE qualifier = 'FIL'"
+                        "rawSql": "SELECT NOW() as time, COUNT(DISTINCT cm.path) as value\nFROM metrics_collectedmetric cm\nJOIN organizations_repository r ON r.id = cm.repository_id\nWHERE cm.qualifier = 'FIL'\nAND r.product_id = '${product}'::integer"
                       }
                     },
                     "refId": "A",
@@ -728,7 +728,7 @@
                       },
                       "spec": {
                         "format": "table",
-                        "rawSql": "WITH realizados AS (\n    SELECT sc.name AS char_name, sc.key AS char_key,\n           ROUND(AVG(cc.value)::numeric, 3)    AS realizado,\n           ROUND(STDDEV(cc.value)::numeric, 3) AS dispersao\n    FROM characteristics_calculatedcharacteristic cc\n    JOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\n    WHERE cc.created_at >= NOW() - INTERVAL '7 days'\n    GROUP BY sc.name, sc.key\n),\nplanejados AS (\n    SELECT elem.key AS char_key,\n           ROUND((elem.value::numeric / 100), 3) AS planejado\n    FROM goals_goal g\n    CROSS JOIN LATERAL jsonb_each_text(g.data::jsonb) AS elem(key, value)\n    WHERE g.id = (SELECT id FROM goals_goal ORDER BY created_at DESC LIMIT 1)\n)\nSELECT r.char_name                AS char_name,\n       COALESCE(p.planejado, 0.5) AS planejado,\n       r.realizado                AS realizado,\n       COALESCE(r.dispersao, 0)   AS dispersao\nFROM realizados r\nLEFT JOIN planejados p ON p.char_key = r.char_key\nORDER BY r.char_name"
+                        "rawSql": "WITH realizados AS (\n    SELECT sc.name AS char_name, sc.key AS char_key,\n           ROUND(AVG(cc.value)::numeric, 3)    AS realizado,\n           ROUND(STDDEV(cc.value)::numeric, 3) AS dispersao\n    FROM characteristics_calculatedcharacteristic cc\n    JOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\n    JOIN organizations_repository r ON r.id = cc.repository_id\n    WHERE cc.created_at >= NOW() - INTERVAL '7 days'\n      AND r.product_id = '${product}'::integer\n    GROUP BY sc.name, sc.key\n),\nplanejados AS (\n    SELECT elem.key AS char_key,\n           ROUND((elem.value::numeric / 100), 3) AS planejado\n    FROM goals_goal g\n    CROSS JOIN LATERAL jsonb_each_text(g.data::jsonb) AS elem(key, value)\n    WHERE g.product_id = '${product}'::integer\n      AND g.id = (\n        SELECT id FROM goals_goal\n        WHERE product_id = '${product}'::integer\n        ORDER BY created_at DESC LIMIT 1\n      )\n)\nSELECT r.char_name                AS char_name,\n       COALESCE(p.planejado, 0.5) AS planejado,\n       r.realizado                AS realizado,\n       COALESCE(r.dispersao, 0)   AS dispersao\nFROM realizados r\nLEFT JOIN planejados p ON p.char_key = r.char_key\nORDER BY r.char_name"
                       }
                     },
                     "refId": "A",
@@ -809,7 +809,7 @@
                         "editorMode": "code",
                         "format": "table",
                         "rawQuery": true,
-                        "rawSql": " SELECT\n    r.name as repository,\n    sc.name as characteristic,\n    sc.key as char_key,\n    ROUND(AVG(cc.value)::numeric, 3) as value,\n    ROUND(STDDEV(cc.value)::numeric, 3) as std_dev\n  FROM characteristics_calculatedcharacteristic cc\n  JOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\n  JOIN organizations_repository r ON r.id = cc.repository_id\n  WHERE r.name LIKE '%MeasureSoftGram%'\n    AND cc.created_at >= NOW() - INTERVAL '30 days'\n  GROUP BY r.name, sc.name, sc.key\n  ORDER BY r.name, sc.name;\n",
+                        "rawSql": "SELECT\n    r.name as repository,\n    sc.name as characteristic,\n    sc.key as char_key,\n    ROUND(AVG(cc.value)::numeric, 3) as value,\n    ROUND(STDDEV(cc.value)::numeric, 3) as std_dev\nFROM characteristics_calculatedcharacteristic cc\nJOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\nJOIN organizations_repository r ON r.id = cc.repository_id\nWHERE r.product_id = '${product}'::integer\n  AND cc.created_at >= NOW() - INTERVAL '30 days'\nGROUP BY r.name, sc.name, sc.key\nORDER BY r.name, sc.name;",
                         "sql": {
                           "columns": [
                             {
@@ -1033,6 +1033,21 @@
       "fiscalYearStartMonth": 0
     },
     "title": "1. Visão Geral de Qualidade",
-    "variables": []
+    "variables": [
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "product",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "query": "",
+          "label": "Produto",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      }
+    ]
   }
 }

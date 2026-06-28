@@ -5,7 +5,7 @@ import logging
 
 from rest_framework import permissions
 
-from organizations.models import Repository
+from organizations.models import Product, Repository
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,33 @@ class HasRepositoryAccess(permissions.BasePermission):
         return Repository.objects.filter(
             id=repository.id, product__organization__admin=user  # Admin da organização
         ).exists()
+
+
+class CanAccessProduct(permissions.BasePermission):
+    """
+    Valida que o usuário autenticado tem acesso ao produto informado
+    via query param product_id.
+    Cadeia: User → Organization.admin → Product
+    """
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        product_id = request.query_params.get('product_id')
+        if not product_id:
+            return False
+
+        try:
+            return Product.objects.filter(
+                id=product_id, organization__admin=request.user
+            ).exists()
+        except ValueError:
+            logger.warning(f'product_id inválido: {product_id}')
+            return False
 
 
 class CanAccessDashboard(permissions.BasePermission):

@@ -391,6 +391,20 @@
     "title": "Evolução Temporal — Hierarquia Completa",
     "variables": [
       {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "product",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "query": "",
+          "label": "Produto",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      },
+      {
         "kind": "QueryVariable",
         "spec": {
           "name": "repository",
@@ -410,7 +424,7 @@
               "name": "measuresoftgram-db"
             },
             "spec": {
-              "__legacyStringValue": "SELECT name AS __text, id::text AS __value FROM organizations_repository ORDER BY name"
+              "__legacyStringValue": "SELECT name AS __text, id::text AS __value FROM organizations_repository WHERE product_id = '${product}'::integer ORDER BY name"
             }
           },
           "regex": "",

@@ -17,6 +17,14 @@
 # na box, nunca no repo.
 # ============================================================
 
+# Nome FIXO do projeto compose. Sem isso, o project name vira o basename do
+# diretorio onde o compose roda, que mudou entre o deploy antigo (rodava do
+# checkout do runner -> "deploy") e o novo (~/msgram-deploy). Project name
+# diferente = compose cria stack/volume PARALELOS e colide nos container_name
+# fixos (msgram_db etc.). Pinar em "deploy" faz todo deploy (Service e Front)
+# adotar a stack existente e reusar o volume com dados (deploy_service_postgres_data).
+name: deploy
+
 volumes:
   service_postgres_data:
 

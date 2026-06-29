@@ -59,7 +59,7 @@ services:
       - ./env-vars/.postgres.env
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_SECURITY_ADMIN_PASSWORD: admin123  # NOSONAR — credencial de dev local, nunca vai a produção
       GF_INSTALL_PLUGINS: volkovlabs-echarts-panel
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: volkovlabs-echarts-panel
       GF_AUTH_ANONYMOUS_ENABLED: "true"

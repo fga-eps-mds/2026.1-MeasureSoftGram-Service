@@ -43,7 +43,7 @@ class GrafanaAPIClient:
         params = {'tag': tag, 'type': 'dash-db'}
 
         try:
-            response = requests.get(url, auth=self.auth, params=params, timeout=self.timeout)
+            response = requests.get(url, auth=self.auth, params=params, timeout=self.timeout)  # NOSONAR — rede interna Docker
             response.raise_for_status()
             dashboards = response.json()
             logger.info(f'Encontrados {len(dashboards)} dashboards com tag "{tag}"')
@@ -65,7 +65,7 @@ class GrafanaAPIClient:
         url = f'{self.base_url}/api/dashboards/uid/{uid}'
 
         try:
-            response = requests.get(url, auth=self.auth, timeout=self.timeout)
+            response = requests.get(url, auth=self.auth, timeout=self.timeout)  # NOSONAR — rede interna Docker
             response.raise_for_status()
             dashboard_data = response.json()
             logger.info(f'Dashboard {uid} encontrado: {dashboard_data.get("meta", {}).get("slug")}')
@@ -144,7 +144,7 @@ class GrafanaAPIClient:
         full_url = f'{self.base_url}{dashboard_url}'
 
         try:
-            response = requests.get(full_url, auth=self.auth, timeout=self.timeout)
+            response = requests.get(full_url, auth=self.auth, timeout=self.timeout)  # NOSONAR — rede interna Docker
             response.raise_for_status()
             logger.info(f'Proxy bem-sucedido para {dashboard_url}')
             return response

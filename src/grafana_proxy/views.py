@@ -234,9 +234,4 @@ class GrafanaProxyViewSet(viewsets.ViewSet):
         Indica se o dashboard expõe um seletor de repositório na UI do Grafana.
         Usado para informar o frontend se deve exibir um pre-seletor de repositório.
         """
-        dashboards_with_repo_selector = [
-            'dashboard-evolucao',
-            'dashboard-saude-qualidade-repositorio',
-            'dashboard-ecg-tsqmi',
-        ]
-        return any(uid in dashboard_uid for uid in dashboards_with_repo_selector)
+        return dashboard_uid == 'hierarquia-qualidade'

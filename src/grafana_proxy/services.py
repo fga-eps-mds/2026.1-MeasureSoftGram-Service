@@ -87,7 +87,7 @@ class GrafanaAPIClient:
         organization_id: Optional[int] = None,
         product_id: Optional[int] = None,
         kiosk: bool = True,
-        theme: str = 'dark',
+        theme: str = 'light',
     ) -> str:
         """
         Constrói a URL de acesso ao dashboard do Grafana.
@@ -121,9 +121,9 @@ class GrafanaAPIClient:
         if product_id:
             url += f'&var-product={product_id}'
 
-        # Modo kiosk (remove menu e header)
+        # Modo kiosk (remove menu, header e controles de painel)
         if kiosk:
-            url += '&kiosk=tv'
+            url += '&kiosk'
 
         # Tema
         url += f'&theme={theme}'

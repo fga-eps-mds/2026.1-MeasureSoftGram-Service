@@ -29,8 +29,8 @@ ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.
 
 # Allowed origins on CORS
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
     os.getenv(
         "FRONTEND_DEV_URL",
         "https://2024-1-measure-soft-gram.vercel.app",
@@ -88,6 +88,7 @@ APPLICATION_APPS = [
     "math_model",
     "utils",
     "releases",
+    "grafana_proxy",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + APPLICATION_APPS
@@ -310,3 +311,12 @@ CREATE_FAKE_DATA = os.getenv("CREATE_FAKE_DATA", "False").lower() in (
 
 # Maximum number of days without a new TSQMI calculation before the badge shows "N/A".
 BADGE_STALENESS_DAYS = int(os.getenv("BADGE_STALENESS_DAYS", "30"))
+
+# Grafana Proxy Configuration
+GRAFANA_CONFIG = {
+    'BASE_URL': os.getenv('GRAFANA_BASE_URL', 'http://grafana:3000'),  # NOSONAR — rede interna Docker
+    'PUBLIC_URL': os.getenv('GRAFANA_PUBLIC_URL', 'http://localhost:5000'),  # NOSONAR — URL de dev
+    'USERNAME': os.getenv('GRAFANA_USERNAME', 'admin'),
+    'PASSWORD': os.getenv('GRAFANA_PASSWORD', ''),  # sem default — obrigatório via env
+    'TIMEOUT': int(os.getenv('GRAFANA_TIMEOUT', '10')),
+}

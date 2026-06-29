@@ -81,6 +81,7 @@ urlpatterns = [
     path('api/v1/', include(prod_router.nested_router.urls)),
     path('api/v1/', include(repo_router.nested_router.urls)),
     path('api/v1/', include(accounts_urls.urlpatterns)),
+    path('api/v1/grafana/', include('grafana_proxy.urls')),
     path(
         REPO_PREFIX + 'latest-values/characteristics/<str:characteristic_key>/badge/',
         LatestCalculatedCharacteristicBadgeViewSet.as_view({'get': 'list'}),

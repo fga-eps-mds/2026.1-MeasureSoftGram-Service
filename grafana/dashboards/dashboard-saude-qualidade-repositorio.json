@@ -1,0 +1,316 @@
+{
+  "apiVersion": "dashboard.grafana.app/v2",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "saude-qualidade-repo",
+    "namespace": "default",
+    "uid": "841fdfc2-e393-4319-8695-50e0460ca9cd",
+    "resourceVersion": "1782650198495015",
+    "generation": 27,
+    "creationTimestamp": "2026-06-13T15:34:04Z",
+    "labels": {
+      "grafana.app/deprecatedInternalID": "3171026305658880"
+    },
+    "annotations": {
+      "grafana.app/createdBy": "access-policy:service",
+      "grafana.app/folder": "",
+      "grafana.app/managedBy": "classic-file-provisioning",
+      "grafana.app/managerAllowsEdits": "true",
+      "grafana.app/managerId": "MeasureSoftGram",
+      "grafana.app/saved-from-ui": "Grafana v13.0.2 (3fcdbc5a)",
+      "grafana.app/sourceChecksum": "1cff712d641d3490b5846ab58da5832d",
+      "grafana.app/sourcePath": "/etc/grafana/dashboards/dashboard-saude-qualidade-repositorio.json",
+      "grafana.app/sourceTimestamp": "1782569560000",
+      "grafana.app/updatedBy": "user:afoguqhow06bkf",
+      "grafana.app/updatedTimestamp": "2026-06-28T12:36:38Z"
+    }
+  },
+  "spec": {
+    "annotations": [
+      {
+        "kind": "AnnotationQuery",
+        "spec": {
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "datasource": {
+              "name": "-- Grafana --"
+            },
+            "spec": {}
+          },
+          "enable": true,
+          "hide": false,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "builtIn": true,
+          "placement": "inControlsMenu"
+        }
+      }
+    ],
+    "cursorSync": "Off",
+    "editable": true,
+    "elements": {
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "Gráfico 2 — MSG Individual",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "dataset": "postgres",
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "  SELECT\r\n      cc.created_at::date AS datetime,\r\n      ROUND(AVG(CASE WHEN sc.key = 'reliability'            THEN cc.value END)::numeric, 3) AS\r\n  reliability,\r\n      ROUND(AVG(CASE WHEN sc.key = 'maintainability'        THEN cc.value END)::numeric, 3) AS\r\n  maintainability,\r\n      ROUND(AVG(CASE WHEN sc.key = 'functional_suitability' THEN cc.value END)::numeric, 3) AS\r\n  functional_suitability\r\n  FROM characteristics_calculatedcharacteristic cc\r\n  JOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\r\n  WHERE cc.repository_id = ${repository}\r\n    AND (\r\n      CASE\r\n        WHEN '${date_from}' != '' AND '${date_to}' != '' THEN\r\n          cc.created_at::date BETWEEN '${date_from}'::date AND '${date_to}'::date\r\n        WHEN '${date_from}' != '' THEN\r\n          cc.created_at::date >= '${date_from}'::date\r\n        WHEN '${date_to}' != '' THEN\r\n          cc.created_at::date <= '${date_to}'::date\r\n        ELSE TRUE\r\n      END\r\n    )\r\n  GROUP BY cc.created_at::date\r\n  ORDER BY cc.created_at::date\r\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "dataset": "postgres",
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "  SELECT\r\n      rel.release_name,\r\n      rel.start_at::date AS release_date\r\n  FROM releases rel\r\n  JOIN organizations_repository repo ON repo.product_id = rel.product_id\r\n  WHERE repo.id = ${repository}\r\n    AND rel.start_at::date >= (\r\n      SELECT MIN(cc.created_at::date)\r\n      FROM characteristics_calculatedcharacteristic cc\r\n      WHERE cc.repository_id = ${repository}\r\n    )\r\n    AND rel.start_at::date <= (\r\n      SELECT MAX(cc.created_at::date)\r\n      FROM characteristics_calculatedcharacteristic cc\r\n      WHERE cc.repository_id = ${repository}\r\n    )\r\n  ORDER BY rel.start_at\r\n",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "volkovlabs-echarts-panel",
+            "version": "7.2.5",
+            "spec": {
+              "options": {
+                "baidu": {
+                  "callback": "bmapReady",
+                  "key": ""
+                },
+                "editor": {
+                  "format": "auto"
+                },
+                "editorMode": "visual",
+                "gaode": {
+                  "key": "",
+                  "plugin": "AMap.Scale,AMap.ToolBar"
+                },
+                "getOption": "const series = context.panel.data.series.map((s) => {\n  const sData = s.fields.find((f) => f.type === 'number').values.buffer || s.fields.find((f) => f.type === 'number').values;\n  const sTime = s.fields.find((f) => f.type === 'time').values.buffer || s.fields.find((f) => f.type === 'time').values;\n  \n  return {\n    name: s.refId,\n    type: 'line',\n    showSymbol: false,\n    areaStyle: {\n      opacity: 0.1,\n    },\n    lineStyle: {\n      width: 1,\n    },\n    data: sData.map((d, i) => [sTime[i], d.toFixed(2)]),\n  };\n});\n\n/**\n * Enable Data Zoom by default\n */\nsetTimeout(() => context.panel.chart.dispatchAction({\n  type: 'takeGlobalCursor',\n  key: 'dataZoomSelect',\n  dataZoomSelectActive: true,\n}), 500);\n\n/**\n * Update Time Range on Zoom\n */\ncontext.panel.chart.on('datazoom', function (params) {\n  const startValue = params.batch[0]?.startValue;\n  const endValue = params.batch[0]?.endValue;\n  locationService.partial({ from: startValue, to: endValue });\n});\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: {\n    trigger: 'axis',\n  },\n  legend: {\n    left: '0',\n    bottom: '0',\n    data: context.panel.data.series.map((s) => s.refId),\n    textStyle: {\n      color: 'rgba(128, 128, 128, .9)',\n    },\n  },\n  toolbox: {\n    feature: {\n      dataZoom: {\n        yAxisIndex: 'none',\n        icon: {\n          zoom: 'path://',\n          back: 'path://',\n        },\n      },\n      saveAsImage: {},\n    }\n  },\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n  grid: {\n    left: '2%',\n    right: '2%',\n    top: '2%',\n    bottom: 24,\n    containLabel: true,\n  },\n  series,\n};",
+                "google": {
+                  "callback": "gmapReady",
+                  "key": ""
+                },
+                "map": "none",
+                "renderer": "canvas",
+                "themeEditor": {
+                  "config": "{}",
+                  "name": "default"
+                },
+                "visualEditor": {
+                  "code": "// ═══════════════════════════════════════════════════════════════════════════\n\n// Dashboard Indicador das Características por repositório\n\n// Uma linha por característica • pico = variação entre medições • y: 0-1\n\n// ═══════════════════════════════════════════════════════════════════════════\n\n\ntry {\n\n  const panelData = context.panel.data;\n\n  if (!panelData || !panelData.series || panelData.series.length === 0) {\n\n    return { title: { text: 'Sem dados — selecione um repositório', left: 'center', top: 'center' } };\n\n  }\n\n\n  function toArr(field) {\n\n    if (!field) return [];\n\n    const v = field.values;\n\n    if (!v) return [];\n\n    if (v.buffer) return Array.from(new Float64Array(v.buffer));\n\n    if (Array.isArray(v)) return v;\n\n    if (typeof v.toArray === 'function') return v.toArray();\n\n    return Array.from(v);\n\n  }\n\n\n  const frame = panelData.series[0];\n\n  if (!frame || frame.fields.length === 0) {\n\n    return { title: { text: 'Query sem retorno', left: 'center', top: 'center' } };\n\n  }\n\n\n  // ── Extração e Conversão de Datas ──────────────────────────────────────────\n\n  const rawDatetimes = toArr(frame.fields.find(f => f.name === 'datetime'));\n\n  const datetimes = rawDatetimes.map(ts => {\n\n    const d = new Date(Number(ts));\n\n    // Fallback de segurança caso a query retorne string em vez de timestamp\n\n    if (isNaN(d.getTime())) return String(ts);\n\n\n    const yyyy = d.getFullYear();\n\n    const mm = String(d.getMonth() + 1).padStart(2, '0');\n\n    const dd = String(d.getDate()).padStart(2, '0');\n\n    return `${yyyy}-${mm}-${dd}`;\n\n  });\n\n\n  const characteristics = [\n\n    { key: 'reliability', label: 'Confiabilidade', color: '#00D9C9', data: toArr(frame.fields.find(f => f.name === 'reliability')) },\n\n    { key: 'maintainability', label: 'Manutenibilidade', color: '#0080FF', data: toArr(frame.fields.find(f => f.name === 'maintainability')) },\n\n    { key: 'functional_suitability', label: 'Ad. Funcional', color: '#FF6B35', data: toArr(frame.fields.find(f => f.name === 'functional_suitability')) },\n\n  ];\n\n\n  // ── Releases da query B ────────────────────────────────────────────────────\n\n  let releases = [];\n\n  if (panelData.series.length > 1) {\n\n    const rf = panelData.series[1];\n\n    const rNames = toArr(rf.fields.find(f => f.name === 'release_name'));\n\n    const rDates = toArr(rf.fields.find(f => f.name === 'release_date'));\n\n\n    // Converter datetimes do eixo X para Epoch (ms) para garantir cálculo numérico seguro\n\n    const datetimesMs = datetimes.map(d => new Date(d).getTime());\n\n    const timeStart = datetimesMs[0];\n\n    const timeEnd = datetimesMs[datetimesMs.length - 1];\n\n\n    releases = rNames.reduce((acc, name, i) => {\n\n      if (!name) return acc;\n\n\n      const rawDate = rDates[i];\n\n      let releaseDate = new Date(rawDate);\n\n\n      // Fallback estrito caso o Grafana entregue a data como timestamp numérico\n\n      if (isNaN(releaseDate.getTime()) && !isNaN(Number(rawDate))) {\n\n        releaseDate = new Date(Number(rawDate));\n\n      }\n\n\n      const releaseTime = releaseDate.getTime();\n\n      if (isNaN(releaseTime) || datetimesMs.length === 0) return acc;\n\n\n      // Filtro arquitetural: Ignora releases que não pertencem ao intervalo atual do gráfico\n\n      if (releaseTime < timeStart || releaseTime > timeEnd) {\n\n        return acc;\n\n      }\n\n\n      // Localiza o índice da medição mais próxima através de menor delta de tempo absoluto\n\n      let closestIdx = 0;\n\n      let minDiff = Infinity;\n\n      for (let j = 0; j < datetimesMs.length; j++) {\n\n        const diff = Math.abs(datetimesMs[j] - releaseTime);\n\n        if (diff < minDiff) {\n\n          minDiff = diff;\n\n          closestIdx = j;\n\n        }\n\n      }\n\n\n      acc.push({ label: name, dateIndex: closestIdx });\n\n      return acc;\n\n    }, []);\n\n  }\n\n\n  // ── Função de pulso MSG ────────────────────────────────────────────────────\n\n  function msgPulse(scores, idxList) {\n\n    const SPS = 60;\n\n    const pts = [];\n\n    for (let ii = 0; ii < idxList.length - 1; ii++) {\n\n      const a = scores[idxList[ii]] ?? 0, b = scores[idxList[ii + 1]] ?? 0;\n\n      const delta = b - a, pk = delta * 2.2;\n\n      for (let s = 0; s < SPS; s++) {\n\n        const t = s / SPS;\n\n        let v;\n\n        if (t < 0.30) { v = a; }\n\n        else if (t < 0.42) { const p = (t - 0.30) / 0.12; v = a + pk * Math.sin(p * Math.PI * 0.5); }\n\n        else if (t < 0.56) { const p = (t - 0.42) / 0.14; v = a + pk * (1 - p); }\n\n        else if (t < 0.68) { const p = (t - 0.56) / 0.12; v = b - delta * 0.15 * Math.sin(p * Math.PI); }\n\n        else { v = b; }\n\n        pts.push(Math.max(0.01, Math.min(0.99, v)));\n\n      }\n\n    }\n\n    pts.push(Math.max(0.01, Math.min(0.99, scores[idxList[idxList.length - 1]] ?? 0)));\n\n    return pts;\n\n  }\n\n\n  const N = datetimes.length;\n\n  const idxList = Array.from({ length: N }, (_, i) => i);\n\n  const SPS = 60;\n\n  const nChars = characteristics.length;\n\n  const isDark = context.grafana.theme.isDark;\n\n  const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';\n\n  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';\n\n\n  // ── Layout: stat boxes à esquerda + gráficos à direita ────────────────────\n\n  const topPad = 8, bottomPad = 10, gap = 4;\n\n  const totalH = 100 - topPad - bottomPad;\n\n  const rowH = (totalH - gap * (nChars - 1)) / nChars;\n\n\n  const grids = characteristics.map((_, i) => ({\n\n    show: true,\n\n    borderWidth: 1,\n\n    borderColor: gridColor,\n\n    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',\n\n    top: `${topPad + i * (rowH + gap)}%`,\n\n    height: `${rowH}%`,\n\n    left: '120px',\n\n    right: '20px',\n\n  }));\n\n\n  const xAxisData = [];\n\n  if (N > 0) {\n\n    for (let i = 0; i < N - 1; i++) {\n\n      xAxisData.push(datetimes[i]);\n\n      for (let s = 1; s < SPS; s++) {\n\n        xAxisData.push('');\n\n      }\n\n    }\n\n    xAxisData.push(datetimes[N - 1]);\n\n  }\n\n\n  const xAxes = characteristics.map((_, i) => ({\n\n    type: 'category',\n\n    gridIndex: i,\n\n    data: xAxisData,\n\n    axisLabel: {\n\n      show: i === nChars - 1,\n\n      color: textColor,\n\n      fontSize: 10,\n\n      interval: (index, value) => value !== '',\n\n      formatter: (value) => {\n\n        if (!value) return '';\n\n        return String(value).slice(5, 10).replace('-', '/');\n\n      }\n\n    },\n\n    axisLine: { lineStyle: { color: gridColor } },\n\n    splitLine: { show: false },\n\n    axisTick: {\n\n      show: true,\n\n      interval: (index, value) => value !== '',\n\n      length: 5\n\n    }\n\n  }));\n\n\n  const yAxes = characteristics.map((c, i) => ({\n\n    type: 'value',\n\n    gridIndex: i,\n\n    min: 0, max: 1,\n\n    interval: 0.5,\n\n    axisLabel: {\n\n      color: textColor, fontSize: 8,\n\n      formatter: v => v === 0 ? '0' : v === 0.5 ? '' : '1',\n\n    },\n\n    splitLine: { lineStyle: { color: gridColor } },\n\n  }));\n\n\n  const releaseCardColor = '#FAD02C';\n\n\n  const series = characteristics.map((c, i) => {\n\n    const markLineData = releases.map(r => ({\n\n      xAxis: r.dateIndex * SPS,\n\n      label: {\n\n        show: i === 0,\n\n        formatter: r.label,\n\n        position: 'end',\n\n        color: '#000000',\n\n        backgroundColor: releaseCardColor,\n\n        padding: [4, 8, 4, 8],\n\n        borderRadius: 4,\n\n        fontSize: 10,\n\n        fontWeight: 'bold',\n\n        distance: 5\n\n      },\n\n      lineStyle: { color: releaseCardColor, type: 'dashed', width: 1.5 },\n\n    }));\n\n\n    return {\n\n      name: c.label,\n\n      type: 'line',\n\n      xAxisIndex: i,\n\n      yAxisIndex: i,\n\n      smooth: false,\n\n      symbol: 'none',\n\n      lineStyle: { color: c.color, width: 2 },\n\n      data: msgPulse(c.data, idxList),\n\n      markLine: {\n\n        silent: true,\n\n        symbol: ['none', 'none'],\n\n        data: markLineData,\n\n      },\n\n      markPoint: {\n\n        symbol: 'circle', symbolSize: 6,\n\n        data: releases.map(r => ({\n\n          coord: [r.dateIndex * SPS, c.data[r.dateIndex] ?? 0],\n\n          itemStyle: { color: releaseCardColor, borderColor: isDark ? '#181b1f' : '#fff', borderWidth: 1 },\n\n        })),\n\n      },\n\n    };\n\n  });\n\n\n  const mainTextColor = context.panel.isDark ? '#ffffff' : '#333333';\n\n\n  // ── Stat boxes (Resolvido: Alinhamento colado + centralização matemática) ──\n\n  const statGraphics = characteristics.map((c, i) => {\n\n    const nVals = c.data.length;\n\n    const lastValue = nVals > 0 ? c.data[nVals - 1] ?? 0 : 0;\n\n    const prevValue = nVals > 1 ? c.data[nVals - 2] ?? null : null;\n\n\n    let varText = '0.00%';\n\n    let varColor = textColor;\n\n    let arrow = '';\n\n\n    // Cálculo da variação percentual\n\n    if (prevValue !== null) {\n\n      const delta = lastValue - prevValue;\n\n      if (prevValue !== 0) {\n\n        const pct = (delta / prevValue) * 100;\n\n        arrow = pct > 0 ? '▲ ' : (pct < 0 ? '▼ ' : '');\n\n        varText = `${arrow}${Math.abs(pct).toFixed(2)}%`;\n\n        varColor = pct > 0 ? '#1D9E75' : (pct < 0 ? '#E24B4A' : textColor);\n\n      } else if (lastValue > 0) {\n\n        varText = '▲ 100.00%';\n\n        varColor = '#1D9E75';\n\n      }\n\n    }\n\n\n    // Calcula exatamente a porcentagem de eixo central do bloco da matriz\n\n    const yCenterPct = topPad + i * (rowH + gap) + (rowH / 2);\n\n\n    return {\n\n      type: 'text',\n\n      left: 10,\n\n      top: `${yCenterPct}%`, // Fixa toda a matriz de texto neste centro\n\n      style: {\n\n        // Renderiza tudo como um único bloco rico (rich text)\n\n        text: `{label|${c.label}}\\n{value|${lastValue.toFixed(2)}}\\n{variation|${varText}}`,\n\n        rich: {\n\n          label: {\n\n            fontSize: 13,\n\n            fontWeight: 'normal',\n\n            fill: mainTextColor,\n\n            padding: [0, 0, 2, 0] // Espaçamento microscópico para colar o texto\n\n          },\n\n          value: {\n\n            fontSize: 32,\n\n            fontWeight: 'bold',\n\n            fill: c.color,\n\n            padding: [0, 0, 4, 0] // Espaçamento microscópico para colar o texto\n\n          },\n\n          variation: {\n\n            fontSize: 11,\n\n            fontWeight: 'bold',\n\n            fill: varColor\n\n          }\n\n        },\n\n        textVerticalAlign: 'middle', // Garante que a matriz inteira (nome+valor+seta) tenha seu EIXO CENTRAL na porcentagem calculada\n\n        textAlign: 'left' // Todos os itens colados lado esquerdo\n\n      }\n\n    };\n\n  });\n\n\n  // ── Título e subtítulo ─────────────────────────────────────────────────────\n\n  const titleGraphic = {\n\n    type: 'group',\n\n    left: 120,\n\n    top: 0,\n\n    children: [\n\n      {\n\n        type: 'text',\n\n        left: 0,\n\n        top: 0,\n\n        style: {\n\n          text: 'Dashboard Indicador das Características por repositório',\n\n          fontSize: 16,\n\n          fontWeight: 'bold',\n\n          fill: mainTextColor,\n\n        },\n\n      },\n\n      {\n\n        type: 'text',\n\n        left: 0,\n\n        top: 20,\n\n        style: {\n\n          text: 'Uma linha por característica • pico = variação entre medições • y: 0-1',\n\n          fontSize: 11,\n\n          fill: textColor,\n\n        },\n\n      },\n\n    ],\n\n  };\n\n\n  // ── Rodapé com informações ─────────────────────────────────────────────────\n\n  const lastDate = datetimes[datetimes.length - 1] || '';\n\n  const repoName = context.grafana.replaceVariables('${repository:text}') || 'N/A';\n\n\n  const footerGraphic = {\n\n    type: 'text',\n\n    left: 'center',\n\n    bottom: 0,\n\n    style: {\n\n      text: `Repositório: ${repoName} · Última medição: ${lastDate} · ● = release`,\n\n      fontSize: 10,\n\n      fill: textColor,\n\n    },\n\n  };\n\n\n  // ── Toolbox com exportação CSV (Com hitbox transparente unificada) ─────────\n\n  function exportCSV() {\n\n    let csv = 'Data,Característica,Valor\\n';\n\n    characteristics.forEach(c => {\n\n      c.data.forEach((val, idx) => {\n\n        if (val !== null && val !== undefined) {\n\n          const date = datetimes[idx];\n\n          csv += `${date},${c.label},${val.toFixed(3)}\\n`;\n\n        }\n\n      });\n\n    });\n\n    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });\n\n    const link = document.createElement('a');\n\n    const url = URL.createObjectURL(blob);\n\n    const repoNameVar = context.grafana.replaceVariables('${repository:text}') || 'repo';\n\n    link.setAttribute('href', url);\n\n    link.setAttribute('download', `msg_individual_${repoNameVar}_${new Date().toISOString().split('T')[0]}.csv`);\n\n    link.style.display = 'none';\n\n    document.body.appendChild(link);\n\n    link.click();\n\n    document.body.removeChild(link);\n\n  }\n\n\n  const toolbox = {\n\n    show: true,\n\n    feature: {\n\n      myExportCsv: {\n\n        show: true,\n\n        title: 'Exportar CSV',\n\n        icon: 'path://M14 2H6C4.89 2 4 2.9 4 4V20C4 21.11 4.89 22 6 22H18C19.11 22 20 21.11 20 20V8L14 2M18 20H6V4H13V9H18V20M12 19L8 15H10.5V12H13.5V15H16L12 19Z',\n\n        onclick: exportCSV\n\n      }\n\n    },\n\n    right: 40,\n\n    top: 0\n\n  };\n\n\n  const exportGroupGraphic = {\n\n    type: 'group',\n\n    right: 40,\n\n    top: 0,\n\n    children: [\n\n      {\n\n        type: 'text',\n\n        left: -85,\n\n        top: 7,\n\n        style: {\n\n          text: 'exportar .csv',\n\n          fontSize: 12,\n\n          fontWeight: 'bold',\n\n          fill: textColor\n\n        }\n\n      },\n\n      {\n\n        type: 'rect',\n\n        left: -90,\n\n        top: 0,\n\n        shape: { width: 120, height: 30 },\n\n        style: { fill: 'transparent' },\n\n        cursor: 'pointer',\n\n        onclick: exportCSV,\n\n        z: 100\n\n      }\n\n    ]\n\n  };\n\n\n  return {\n\n    backgroundColor: 'transparent',\n\n    graphic: [titleGraphic, ...statGraphics, footerGraphic, exportGroupGraphic],\n\n    tooltip: {\n\n      trigger: 'axis',\n\n      axisPointer: { type: 'line' },\n\n      formatter: params => {\n\n        const p = params[0];\n\n        const charIdx = p.seriesIndex;\n\n        const measureIdx = Math.min(Math.floor(p.dataIndex / SPS), N - 1);\n\n        const c = characteristics[charIdx];\n\n        const v = c.data[measureIdx] ?? 0;\n\n        const prev = measureIdx > 0 ? (c.data[measureIdx - 1] ?? null) : null;\n\n        const delta = prev !== null ? v - prev : null;\n\n        const dt = datetimes[measureIdx];\n\n        const rel = releases.find(r => r.dateIndex === measureIdx);\n\n        let html = `<b>${dt}</b>`;\n\n        if (rel) html += `<br/><span style=\"color:${releaseCardColor}\">● ${rel.label}</span>`;\n\n        html += `<br/><span style=\"color:${c.color}\">■</span> ${c.label}: <b>${v.toFixed(2)}</b>`;\n\n        if (delta !== null) {\n\n          const col = delta >= 0 ? '#1D9E75' : '#E24B4A';\n\n          html += ` <span style=\"color:${col}\">${delta >= 0 ? '+' : ''}${delta.toFixed(2)}</span>`;\n\n        }\n\n        return html;\n\n      },\n\n    },\n\n    toolbox: toolbox,\n\n    grid: grids,\n\n    xAxis: xAxes,\n\n    yAxis: yAxes,\n\n    series,\n\n  };\n\n} catch (e) {\n\n  return { title: { text: 'Erro: ' + e.message, left: 'center', top: 'center' } };\n\n} ",
+                  "dataset": [],
+                  "series": []
+                }
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "kind": "GridLayout",
+      "spec": {
+        "items": [
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 25,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": [],
+    "liveNow": false,
+    "preload": false,
+    "tags": [
+      "measuresoftgram"
+    ],
+    "timeSettings": {
+      "timezone": "browser",
+      "from": "2026-06-26T16:17:31.477Z",
+      "to": "2026-06-26T16:24:00.521Z",
+      "autoRefresh": "5m",
+      "autoRefreshIntervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "hideTimepicker": true,
+      "fiscalYearStartMonth": 0
+    },
+    "title": "Saúde de Qualidade por Repositório",
+    "variables": [
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "product",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "query": "",
+          "label": "Produto",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      },
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "name": "repository",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "label": "Repositório",
+          "hide": "dontHide",
+          "refresh": "onTimeRangeChanged",
+          "skipUrlSync": false,
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana-postgresql-datasource",
+            "version": "v0",
+            "datasource": {
+              "name": "measuresoftgram-db"
+            },
+            "spec": {
+              "__legacyStringValue": "SELECT name AS __text, id::text AS __value FROM organizations_repository WHERE product_id = '${product}'::integer ORDER BY name"
+            }
+          },
+          "regex": "",
+          "regexApplyTo": "value",
+          "sort": "alphabeticalAsc",
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "allowCustomValue": true
+        }
+      },
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "date_from",
+          "current": {
+            "text": "2025-04-01",
+            "value": "2025-04-01"
+          },
+          "query": "2025-04-01",
+          "label": "De",
+          "hide": "dontHide",
+          "skipUrlSync": false
+        }
+      },
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "date_to",
+          "current": {
+            "text": "2026-04-30",
+            "value": "2026-04-30"
+          },
+          "query": "2026-04-30",
+          "label": "Até",
+          "hide": "dontHide",
+          "skipUrlSync": false
+        }
+      }
+    ]
+  }
+}

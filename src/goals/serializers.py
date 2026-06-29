@@ -146,7 +146,7 @@ class GoalSerializer(serializers.ModelSerializer):
         return product
 
     def is_valid(self, raise_exception=False):
-        valid_format = super().is_valid(raise_exception)
+        valid_format = super().is_valid(raise_exception=raise_exception)
 
         is_valid_1 = (
             self.check_if_all_characteristics_are_defined_in_the_pre_config(

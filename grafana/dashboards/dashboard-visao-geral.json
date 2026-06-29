@@ -1,0 +1,1053 @@
+{
+  "apiVersion": "dashboard.grafana.app/v2",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "5904a9de-7f42-453c-9a93-1175d1fe6918",
+    "namespace": "default",
+    "uid": "e271dfe3-75e5-427b-878c-0624afc84a6e",
+    "resourceVersion": "1781546532245993",
+    "generation": 20,
+    "creationTimestamp": "2026-06-09T18:02:36Z",
+    "labels": {
+      "grafana.app/deprecatedInternalID": "1759200090529792"
+    },
+    "annotations": {
+      "grafana.app/createdBy": "access-policy:service",
+      "grafana.app/folder": "",
+      "grafana.app/managedBy": "classic-file-provisioning",
+      "grafana.app/managerAllowsEdits": "true",
+      "grafana.app/managerId": "MeasureSoftGram",
+      "grafana.app/saved-from-ui": "Grafana v13.0.2 (3fcdbc5a)",
+      "grafana.app/sourceChecksum": "1c0763c087544ffe96a68c2c58c0c8dc",
+      "grafana.app/sourcePath": "/etc/grafana/dashboards/1-vis-o-geral-de-qualidade.json",
+      "grafana.app/sourceTimestamp": "1780924665000",
+      "grafana.app/updatedBy": "user:ffomzhm2k8w00e",
+      "grafana.app/updatedTimestamp": "2026-06-15T18:02:12Z"
+    }
+  },
+  "spec": {
+    "annotations": [
+      {
+        "kind": "AnnotationQuery",
+        "spec": {
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "datasource": {
+              "name": "-- Grafana --"
+            },
+            "spec": {}
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "builtIn": true
+        }
+      }
+    ],
+    "cursorSync": "Off",
+    "editable": true,
+    "elements": {
+      "panel-10": {
+        "kind": "Panel",
+        "spec": {
+          "id": 10,
+          "title": "Total de Caracterisitcas",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT NOW() as time, COUNT(*) as value FROM characteristics_supportedcharacteristic ",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "/^value$/",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "dark-blue"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-11": {
+        "kind": "Panel",
+        "spec": {
+          "id": 11,
+          "title": "Total de Sub Caracterisitcas",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT NOW() as time, COUNT(*) as value FROM subcharacteristics_supportedsubcharacteristic;",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "/^value$/",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "semi-dark-blue"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "TSQMI por Repositório (último valor)",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT NOW() as time, r.name as metric, t.value\nFROM tsqmi_tsqmi t\nJOIN organizations_repository r ON r.id = t.repository_id\nWHERE t.id IN (\n  SELECT DISTINCT ON (repository_id) id\n  FROM tsqmi_tsqmi\n  ORDER BY repository_id, created_at DESC\n)\nAND r.product_id = '${product}'::integer",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "gauge",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "barShape": "flat",
+                "barWidthFactor": 0.36,
+                "effects": {
+                  "barGlow": false,
+                  "centerGlow": false,
+                  "gradient": true
+                },
+                "endpointMarker": "point",
+                "minVizHeight": 215,
+                "minVizWidth": 332,
+                "orientation": "vertical",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "segmentCount": 1,
+                "segmentSpacing": 0.3,
+                "shape": "gauge",
+                "showThresholdLabels": false,
+                "showThresholdMarkers": false,
+                "sizing": "manual",
+                "sparkline": false,
+                "textMode": "value_and_name"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "min": 0,
+                  "max": 1,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "red"
+                      },
+                      {
+                        "value": 0.33,
+                        "color": "yellow"
+                      },
+                      {
+                        "value": 0.66,
+                        "color": "green"
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-3": {
+        "kind": "Panel",
+        "spec": {
+          "id": 3,
+          "title": "Total de Medidas Calculadas",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "format": "time_series",
+                        "rawSql": "SELECT NOW() as time, COUNT(*) as value\nFROM measures_calculatedmeasure cm\nJOIN organizations_repository r ON r.id = cm.repository_id\nWHERE r.product_id = '${product}'::integer"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "blue"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-4": {
+        "kind": "Panel",
+        "spec": {
+          "id": 4,
+          "title": "Total de Métricas Coletadas",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "format": "time_series",
+                        "rawSql": "SELECT NOW() as time, COUNT(*) as value\nFROM metrics_collectedmetric cm\nJOIN organizations_repository r ON r.id = cm.repository_id\nWHERE r.product_id = '${product}'::integer"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "light-blue"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-5": {
+        "kind": "Panel",
+        "spec": {
+          "id": 5,
+          "title": "Repositórios Analisados",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "format": "time_series",
+                        "rawSql": "SELECT NOW() as time, COUNT(DISTINCT t.repository_id) as value\nFROM tsqmi_tsqmi t\nJOIN organizations_repository r ON r.id = t.repository_id\nWHERE r.product_id = '${product}'::integer"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "teal"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-6": {
+        "kind": "Panel",
+        "spec": {
+          "id": 6,
+          "title": "Arquivos Analisados",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "format": "time_series",
+                        "rawSql": "SELECT NOW() as time, COUNT(DISTINCT cm.path) as value\nFROM metrics_collectedmetric cm\nJOIN organizations_repository r ON r.id = cm.repository_id\nWHERE cm.qualifier = 'FIL'\nAND r.product_id = '${product}'::integer"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-8": {
+        "kind": "Panel",
+        "spec": {
+          "id": 8,
+          "title": "Planejado vs Realizado (por Característica)",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "format": "table",
+                        "rawSql": "WITH realizados AS (\n    SELECT sc.name AS char_name, sc.key AS char_key,\n           ROUND(AVG(cc.value)::numeric, 3)    AS realizado,\n           ROUND(STDDEV(cc.value)::numeric, 3) AS dispersao\n    FROM characteristics_calculatedcharacteristic cc\n    JOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\n    JOIN organizations_repository r ON r.id = cc.repository_id\n    WHERE cc.created_at >= NOW() - INTERVAL '7 days'\n      AND r.product_id = '${product}'::integer\n    GROUP BY sc.name, sc.key\n),\nplanejados AS (\n    SELECT elem.key AS char_key,\n           ROUND((elem.value::numeric / 100), 3) AS planejado\n    FROM goals_goal g\n    CROSS JOIN LATERAL jsonb_each_text(g.data::jsonb) AS elem(key, value)\n    WHERE g.product_id = '${product}'::integer\n      AND g.id = (\n        SELECT id FROM goals_goal\n        WHERE product_id = '${product}'::integer\n        ORDER BY created_at DESC LIMIT 1\n      )\n)\nSELECT r.char_name                AS char_name,\n       COALESCE(p.planejado, 0.5) AS planejado,\n       r.realizado                AS realizado,\n       COALESCE(r.dispersao, 0)   AS dispersao\nFROM realizados r\nLEFT JOIN planejados p ON p.char_key = r.char_key\nORDER BY r.char_name"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "volkovlabs-echarts-panel",
+            "version": "7.2.5",
+            "spec": {
+              "options": {
+                "baidu": {
+                  "callback": "bmapReady",
+                  "key": ""
+                },
+                "editor": {
+                  "format": "auto"
+                },
+                "editorMode": "code",
+                "gaode": {
+                  "key": "",
+                  "plugin": "AMap.Scale,AMap.ToolBar"
+                },
+                "getOption": "\ntry {\n  const series = context.panel.data.series;\n  if (!series || series.length === 0) {\n    return { title: { text: 'Sem dados', left: 'center', top: 'center' } };\n  }\n\n  const frame = series[0];\n\n  function toArr(field) {\n    if (!field) return [];\n    const v = field.values;\n    if (!v) return [];\n    if (v.buffer) return Array.from(new Float64Array(v.buffer));\n    if (Array.isArray(v)) return v;\n    if (typeof v.toArray === 'function') return v.toArray();\n    return Array.from(v);\n  }\n\n  const chars = toArr(frame.fields[0]);\n  const plan  = toArr(frame.fields[1]);\n  const real  = toArr(frame.fields[2]);\n  const disp  = toArr(frame.fields[3]);\n\n  // Vetores derivados\n  const rc    = plan.map((v, i) => +Math.max(0, v - real[i]).toFixed(3));   // Rp - Rd clampado em 0\n  const rdiff = plan.map((v, i) => +(v - real[i]).toFixed(3));              // Rp - Rd bruto\n\n  // Formatação: \"[ 0.70 | 0.60 | 0.65 ]\"\n  const fmt  = arr => '[ ' + arr.map(v => v.toFixed(2)).join(' | ') + ' ]';\n  const rpStr   = fmt(plan);\n  const rdStr   = fmt(real);\n  const rcStr   = fmt(rc);\n  const rawStr  = fmt(rdiff);\n\n  // Banda de dispersão\n  const realLow  = real.map((v, i) => +Math.max(0, v - disp[i]).toFixed(3));\n  const band     = real.map((v, i) => +Math.min(1, (v + disp[i]) - Math.max(0, v - disp[i])).toFixed(3));\n\n  return {\n    grid: { left: '18%', right: '18%', bottom: '42%', containLabel: true },\n\n    legend: { data: ['Planejado', 'Realizado', 'Dispersão'], top: 0 },\n    tooltip: { trigger: 'axis' },\n\n    xAxis: {\n      type: 'category',\n      boundaryGap: false,\n      data: chars,\n      axisLabel: {\n        interval: 0,\n        formatter: function(value) { return value.split(' ').join('\\n'); }\n      }\n    },\n    yAxis: { type: 'value', min: 0, max: 1 },\n\n    series: [\n      // Base invisível da banda\n      {\n        name: 'Dispersão', type: 'line', smooth: true, symbol: 'none',\n        stack: 'disp', data: realLow,\n        lineStyle: { opacity: 0 }, areaStyle: { color: 'transparent' }\n      },\n      // Faixa de dispersão\n      {\n        name: 'Dispersão', type: 'line', smooth: true, symbol: 'none',\n        stack: 'disp', data: band,\n        lineStyle: { opacity: 0 },\n        areaStyle: { color: 'rgba(255, 140, 0, 0.18)' }\n      },\n      // Linha Planejado (Rp)\n      {\n        name: 'Planejado', type: 'line', smooth: true,\n        symbol: 'circle', symbolSize: 6, z: 3,\n        lineStyle: { color: '#1F60C4', width: 3 },\n        itemStyle: { color: '#1F60C4' },\n        data: plan\n      },\n      // Linha Realizado (Rd)\n      {\n        name: 'Realizado', type: 'line', smooth: true,\n        symbol: 'circle', symbolSize: 6, z: 3,\n        lineStyle: { color: '#FF8C00', width: 3 },\n        itemStyle: { color: '#FF8C00' },\n        data: real\n      }\n    ],\n\n    // Vetores abaixo do gráfico\n    graphic: [\n      // Rp\n      {\n        type: 'text', bottom: 130, left: 'center',\n        style: {\n          text: '⃗Rp = ' + rpStr,\n          fill: '#1F60C4', fontSize: 13, fontWeight: 'bold', fontFamily: 'monospace'\n        }\n      },\n      // Rd\n      {\n        type: 'text', bottom: 100, left: 'center',\n        style: {\n          text: '⃗Rd = ' + rdStr,\n          fill: '#FF8C00', fontSize: 13, fontWeight: 'bold', fontFamily: 'monospace'\n        }\n      },\n      // Rc = max(0, Rp - Rd)\n      {\n        type: 'text', bottom: 65, left: 'center',\n        style: {\n          text: '⃗Rc = ' + rcStr + '  ← max(0, Rp−Rd)',\n          fill: '#999', fontSize: 12, fontWeight: 'bold', fontFamily: 'monospace'\n        }\n      },\n      // Rp - Rd bruto\n      {\n        type: 'text', bottom: 35, left: 'center',\n        style: {\n          text: 'Rp−Rd = ' + rawStr + '  ← bruto',\n          fill: '#666', fontSize: 12, fontFamily: 'monospace'\n        }\n      }\n    ]\n  };\n} catch(e) {\n  return { title: { text: 'Erro: ' + e.message, left: 'center', top: 'center' } };\n}\n",
+                "google": {
+                  "callback": "gmapReady",
+                  "key": ""
+                },
+                "map": "none",
+                "renderer": "canvas",
+                "themeEditor": {
+                  "config": "{}",
+                  "name": "default"
+                },
+                "visualEditor": {
+                  "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n}\n",
+                  "dataset": [],
+                  "series": []
+                }
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-9": {
+        "kind": "Panel",
+        "spec": {
+          "id": 9,
+          "title": "Radar",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "grafana-postgresql-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "measuresoftgram-db"
+                      },
+                      "spec": {
+                        "dataset": "postgres",
+                        "editorMode": "code",
+                        "format": "table",
+                        "rawQuery": true,
+                        "rawSql": "SELECT\n    r.name as repository,\n    sc.name as characteristic,\n    sc.key as char_key,\n    ROUND(AVG(cc.value)::numeric, 3) as value,\n    ROUND(STDDEV(cc.value)::numeric, 3) as std_dev\nFROM characteristics_calculatedcharacteristic cc\nJOIN characteristics_supportedcharacteristic sc ON sc.id = cc.characteristic_id\nJOIN organizations_repository r ON r.id = cc.repository_id\nWHERE r.product_id = '${product}'::integer\n  AND cc.created_at >= NOW() - INTERVAL '30 days'\nGROUP BY r.name, sc.name, sc.key\nORDER BY r.name, sc.name;",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "volkovlabs-echarts-panel",
+            "version": "7.2.5",
+            "spec": {
+              "options": {
+                "baidu": {
+                  "callback": "bmapReady",
+                  "key": ""
+                },
+                "editor": {
+                  "format": "auto"
+                },
+                "editorMode": "visual",
+                "gaode": {
+                  "key": "",
+                  "plugin": "AMap.Scale,AMap.ToolBar"
+                },
+                "getOption": "const series = context.panel.data.series.map((s) => {\n  const sData = s.fields.find((f) => f.type === 'number').values.buffer || s.fields.find((f) => f.type === 'number').values;\n  const sTime = s.fields.find((f) => f.type === 'time').values.buffer || s.fields.find((f) => f.type === 'time').values;\n  \n  return {\n    name: s.refId,\n    type: 'line',\n    showSymbol: false,\n    areaStyle: {\n      opacity: 0.1,\n    },\n    lineStyle: {\n      width: 1,\n    },\n    data: sData.map((d, i) => [sTime[i], d.toFixed(2)]),\n  };\n});\n\n/**\n * Enable Data Zoom by default\n */\nsetTimeout(() => context.panel.chart.dispatchAction({\n  type: 'takeGlobalCursor',\n  key: 'dataZoomSelect',\n  dataZoomSelectActive: true,\n}), 500);\n\n/**\n * Update Time Range on Zoom\n */\ncontext.panel.chart.on('datazoom', function (params) {\n  const startValue = params.batch[0]?.startValue;\n  const endValue = params.batch[0]?.endValue;\n  locationService.partial({ from: startValue, to: endValue });\n});\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: {\n    trigger: 'axis',\n  },\n  legend: {\n    left: '0',\n    bottom: '0',\n    data: context.panel.data.series.map((s) => s.refId),\n    textStyle: {\n      color: 'rgba(128, 128, 128, .9)',\n    },\n  },\n  toolbox: {\n    feature: {\n      dataZoom: {\n        yAxisIndex: 'none',\n        icon: {\n          zoom: 'path://',\n          back: 'path://',\n        },\n      },\n      saveAsImage: {},\n    }\n  },\n  xAxis: {\n    type: 'time',\n  },\n  yAxis: {\n    type: 'value',\n    min: 'dataMin',\n  },\n  grid: {\n    left: '2%',\n    right: '2%',\n    top: '2%',\n    bottom: 24,\n    containLabel: true,\n  },\n  series,\n};",
+                "google": {
+                  "callback": "gmapReady",
+                  "key": ""
+                },
+                "map": "none",
+                "renderer": "canvas",
+                "themeEditor": {
+                  "config": "{}",
+                  "name": "default"
+                },
+                "visualEditor": {
+                  "code": "\n// Acessar dados do painel\nconst frame = context.panel.data.series[0];\n\n// Verificar se temos dados\nif (!frame || !frame.fields || frame.fields.length === 0) {\n  return {\n    title: {\n      text: 'Aguardando dados...',\n      left: 'center',\n      top: 'center',\n      textStyle: { fontSize: 14, color: '#888' }\n    }\n  };\n}\n\n// Função auxiliar para converter valores\nfunction toArray(field) {\n  if (!field) return [];\n  const v = field.values;\n  if (!v) return [];\n  if (v.buffer) return Array.from(new Float64Array(v.buffer));\n  if (Array.isArray(v)) return v;\n  if (typeof v.toArray === 'function') return v.toArray();\n  return Array.from(v);\n}\n\n// Extrair campos\nconst repoField = frame.fields.find(f => f.name === 'repository');\nconst charField = frame.fields.find(f => f.name === 'characteristic');\nconst valueField = frame.fields.find(f => f.name === 'value');\n\nif (!repoField || !charField || !valueField) {\n  return {\n    title: {\n      text: 'Campos não encontrados',\n      left: 'center',\n      top: 'center',\n      textStyle: { fontSize: 14, color: '#E24B4A' }\n    }\n  };\n}\n\nconst repos = toArray(repoField);\nconst chars = toArray(charField);\nconst values = toArray(valueField);\n\n// Processar dados\nconst repositories = {};\nconst characteristicNames = new Set();\n\nfor (let i = 0; i < repos.length; i++) {\n  const repo = repos[i];\n  const char = chars[i];\n  const value = values[i];\n\n  if (!repositories[repo]) {\n    repositories[repo] = {};\n  }\n  repositories[repo][char] = value;\n  characteristicNames.add(char);\n}\n\n// Criar indicadores do radar (características)\nconst characteristics = Array.from(characteristicNames).sort();\nconst indicators = characteristics.map(char => ({\n  name: char,\n  max: 1.0 // Características variam de 0 a 1\n}));\n\n// Cores por repositório\nconst repoColors = {\n  '2022-1-MeasureSoftGram-CLI': '#1D9E75',\n  '2022-1-MeasureSoftGram-Core': '#378ADD',\n  '2022-1-MeasureSoftGram-Service': '#D85A30',\n  '2022-1-MeasureSoftGram-Front': '#D4537E'\n};\n\n// Criar séries de dados para o radar\nconst radarData = Object.keys(repositories).sort().map(repoName => {\n  const values = characteristics.map(char =>\n    repositories[repoName][char] || 0\n  );\n\n  return {\n    value: values,\n    name: repoName.replace('2022-1-MeasureSoftGram-', ''),\n    itemStyle: {\n      color: repoColors[repoName] || '#999'\n    },\n    lineStyle: {\n      color: repoColors[repoName] || '#999',\n      width: 2\n    },\n    areaStyle: {\n      color: repoColors[repoName] || '#999',\n      opacity: 0.15\n    }\n  };\n});\n\n// Tema\nconst isDark = context.grafana.theme.isDark;\nconst textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';\n\nreturn {\n  backgroundColor: 'transparent',\n  title: {\n    text: 'Características por Repositório',\n    left: 'center',\n    top: 10,\n    textStyle: {\n      color: textColor,\n      fontSize: 16,\n      fontWeight: 'bold'\n    }\n  },\n  legend: {\n    data: radarData.map(d => d.name),\n    bottom: 10,\n    textStyle: {\n      color: textColor,\n      fontSize: 11\n    }\n  },\n  tooltip: {\n    trigger: 'item',\n    formatter: params => {\n      let html = '<b>' + params.name + '</b><br/>';\n      params.value.forEach((val, idx) => {\n        html += characteristics[idx] + ': <b>' + val.toFixed(3) + '</b><br/>';\n      });\n      return html;\n    }\n  },\n  radar: {\n    indicator: indicators,\n    shape: 'polygon',\n    radius: '65%',\n    splitNumber: 5,\n    center: ['50%', '55%'],\n    axisName: {\n      color: textColor,\n      fontSize: 11,\n      fontWeight: 'bold'\n    },\n    splitLine: {\n      lineStyle: {\n        color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'\n      }\n    },\n    splitArea: {\n      show: true,\n      areaStyle: {\n        color: isDark\n          ? ['rgba(255,255,255,0.02)', 'rgba(255,255,255,0.04)']\n          : ['rgba(0,0,0,0.02)', 'rgba(0,0,0,0.04)']\n      }\n    },\n    axisLine: {\n      lineStyle: {\n        color: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'\n      }\n    }\n  },\n  series: [{\n    name: 'Características',\n    type: 'radar',\n    data: radarData,\n    emphasis: {\n      lineStyle: {\n        width: 3\n      }\n    }\n  }]\n};\n",
+                  "dataset": [],
+                  "series": []
+                }
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "kind": "GridLayout",
+      "spec": {
+        "items": [
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 4,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-5"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 4,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-6"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 9,
+              "y": 0,
+              "width": 3,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-10"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 12,
+              "y": 0,
+              "width": 3,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-11"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 15,
+              "y": 0,
+              "width": 4,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 19,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-4"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 4,
+              "width": 24,
+              "height": 7,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 11,
+              "width": 13,
+              "height": 14,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-8"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 13,
+              "y": 11,
+              "width": 11,
+              "height": 14,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-9"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": [],
+    "liveNow": false,
+    "preload": false,
+    "tags": [
+      "measuresoftgram"
+    ],
+    "timeSettings": {
+      "timezone": "browser",
+      "from": "now-180d",
+      "to": "now",
+      "autoRefresh": "1m",
+      "autoRefreshIntervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "hideTimepicker": true,
+      "fiscalYearStartMonth": 0
+    },
+    "title": "1. Visão Geral de Qualidade",
+    "variables": [
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "product",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "query": "",
+          "label": "Produto",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      }
+    ]
+  }
+}

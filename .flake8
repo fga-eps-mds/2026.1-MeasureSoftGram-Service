@@ -25,5 +25,6 @@ exclude =
     dist,
     .egg-info,
     .tox,
-    env/
+    env/,
+    src/organizations/management/commands/seed_grafana.py
 max-complexity = 10

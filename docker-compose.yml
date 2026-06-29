@@ -1,5 +1,6 @@
 volumes:
   service_postgres_data:
+  grafana_data:
 
 services:
   db:
@@ -44,3 +45,27 @@ services:
           target: /src
         - action: rebuild
           path: ./pyproject.toml
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "5000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
+    env_file:
+      - ./env-vars/.postgres.env
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123  # NOSONAR — credencial de dev local, nunca vai a produção
+      GF_INSTALL_PLUGINS: volkovlabs-echarts-panel
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: volkovlabs-echarts-panel
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped

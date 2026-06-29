@@ -1029,7 +1029,7 @@
         "2h",
         "1d"
       ],
-      "hideTimepicker": false,
+      "hideTimepicker": true,
       "fiscalYearStartMonth": 0
     },
     "title": "1. Visão Geral de Qualidade",

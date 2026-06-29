@@ -385,7 +385,7 @@
         "2h",
         "1d"
       ],
-      "hideTimepicker": false,
+      "hideTimepicker": true,
       "fiscalYearStartMonth": 0
     },
     "title": "Evolução Temporal — Hierarquia Completa",

@@ -19,6 +19,7 @@
 
 volumes:
   service_postgres_data:
+  grafana_data:
 
 networks:
   msgram:
@@ -47,6 +48,9 @@ services:
     container_name: msgram_service
     image: ${DOCKERHUB_USERNAME}/service:${SERVICE_IMAGE_TAG:-latest}
     env_file:
+      # .service.env deve conter entre outros:
+      #   GRAFANA_PUBLIC_URL=https://<dominio>/grafana
+      #   GRAFANA_USERNAME e GRAFANA_PASSWORD (mesmos do .grafana.env)
       - ./env-vars/.service.env
       - ./env-vars/.postgres.env
     environment:
@@ -61,6 +65,33 @@ services:
       timeout: 5s
       retries: 10
       start_period: 40s
+    networks:
+      - msgram
+    restart: unless-stopped
+
+  grafana:
+    container_name: msgram_grafana
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning
+      - ../grafana/dashboards:/etc/grafana/dashboards
+    env_file:
+      # .postgres.env alimenta o datasource do Grafana (mesmo banco do service)
+      - ./env-vars/.postgres.env
+      # .grafana.env deve conter: GF_SECURITY_ADMIN_USER, GF_SECURITY_ADMIN_PASSWORD
+      - ./env-vars/.grafana.env
+    environment:
+      GF_SERVER_ROOT_URL: '%(protocol)s://%(domain)s/grafana'
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_INSTALL_PLUGINS: volkovlabs-echarts-panel
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: volkovlabs-echarts-panel
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - msgram
     restart: unless-stopped

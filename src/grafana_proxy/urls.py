@@ -19,8 +19,4 @@ urlpatterns = [
         GrafanaProxyViewSet.as_view({'get': 'get_dashboard'}),
         name='dashboard',
     ),
-    path('embed/<str:pk>/', GrafanaProxyViewSet.as_view({'get': 'embed_dashboard'}), name='embed'),
-    path(
-        'verify-token/', GrafanaProxyViewSet.as_view({'get': 'verify_token'}), name='verify-token'
-    ),
 ]

@@ -239,7 +239,7 @@
         "2h",
         "1d"
       ],
-      "hideTimepicker": false,
+      "hideTimepicker": true,
       "fiscalYearStartMonth": 0
     },
     "title": "Dashboard de Pulso",

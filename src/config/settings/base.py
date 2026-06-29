@@ -315,8 +315,8 @@ BADGE_STALENESS_DAYS = int(os.getenv("BADGE_STALENESS_DAYS", "30"))
 # Grafana Proxy Configuration
 GRAFANA_CONFIG = {
     'BASE_URL': os.getenv('GRAFANA_BASE_URL', 'http://grafana:3000'),
+    'PUBLIC_URL': os.getenv('GRAFANA_PUBLIC_URL', 'http://localhost:5000'),
     'USERNAME': os.getenv('GRAFANA_USERNAME', 'admin'),
     'PASSWORD': os.getenv('GRAFANA_PASSWORD', 'admin123'),
     'TIMEOUT': int(os.getenv('GRAFANA_TIMEOUT', '10')),
-    'TOKEN_MAX_AGE': int(os.getenv('GRAFANA_TOKEN_MAX_AGE', '3600')),  # 1 hora
 }

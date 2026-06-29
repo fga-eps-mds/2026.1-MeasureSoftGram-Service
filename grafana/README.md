@@ -29,6 +29,94 @@ grafana/
 
 ---
 
+## 🔑 Variáveis de Ambiente
+
+### Desenvolvimento (`env-vars/`)
+
+O Grafana usa variáveis de três arquivos diferentes. Os arquivos ficam em `env-vars/` (gitignored — nunca versionados).
+
+#### `env-vars/.postgres.env` — compartilhado com o service
+
+```env
+POSTGRES_HOST=db
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PORT=5432
+POSTGRES_PASSWORD=postgres
+```
+
+Essas variáveis alimentam automaticamente o datasource do Grafana via `grafana/provisioning/datasources/measuresoftgram.yml`. Não é necessário duplicar — o container Grafana já recebe esse arquivo.
+
+#### `env-vars/.service.env` — adições para o proxy Django
+
+```env
+# URL pública do Grafana — usada pelo backend para montar o grafana_url
+# retornado pela API e consumido pelo frontend
+GRAFANA_PUBLIC_URL=http://localhost:5000       # desenvolvimento
+# GRAFANA_PUBLIC_URL=https://<dominio>/grafana  # produção
+
+# Credenciais de admin do Grafana (mesmas do .grafana.env)
+# usadas pelo Django para consultar a API interna do Grafana
+GRAFANA_USERNAME=admin
+GRAFANA_PASSWORD=admin123
+```
+
+---
+
+### Produção (`deploy/env-vars/`)
+
+Em produção os arquivos ficam em `deploy/env-vars/` na box. São gitignored e provisionados manualmente.
+
+#### `deploy/env-vars/.grafana.env` — credenciais de admin do Grafana
+
+Deve ser criado na box antes do primeiro `docker compose up`:
+
+```env
+GF_SECURITY_ADMIN_USER=admin
+GF_SECURITY_ADMIN_PASSWORD=<senha-forte>
+```
+
+#### `deploy/env-vars/.service.env` — adições obrigatórias em produção
+
+```env
+# URL pública onde o Grafana é acessível pelo navegador
+GRAFANA_PUBLIC_URL=https://<dominio>/grafana
+
+# Mesmas credenciais do .grafana.env (o Django usa a API interna do Grafana)
+GRAFANA_USERNAME=admin
+GRAFANA_PASSWORD=<mesma-senha-forte>
+```
+
+#### `deploy/env-vars/.postgres.env` — igual ao de desenvolvimento
+
+```env
+POSTGRES_HOST=db
+POSTGRES_DB=<nome-do-banco>
+POSTGRES_USER=<usuario>
+POSTGRES_PORT=5432
+POSTGRES_PASSWORD=<senha-forte>
+```
+
+Esse arquivo é lido pelo container do Grafana (datasource) **e** pelo container do service (Django ORM).
+
+---
+
+### Referência completa das variáveis do Grafana
+
+| Variável | Onde definir | Descrição |
+|---|---|---|
+| `POSTGRES_HOST` | `.postgres.env` | Host do banco (interno Docker: `db`) |
+| `POSTGRES_DB` | `.postgres.env` | Nome do banco |
+| `POSTGRES_USER` | `.postgres.env` | Usuário do banco |
+| `POSTGRES_PASSWORD` | `.postgres.env` | Senha do banco |
+| `GF_SECURITY_ADMIN_USER` | `.grafana.env` | Login do painel admin do Grafana |
+| `GF_SECURITY_ADMIN_PASSWORD` | `.grafana.env` | Senha do painel admin do Grafana |
+| `GRAFANA_PUBLIC_URL` | `.service.env` | URL pública do Grafana (usada pelo Django para gerar links do iframe) |
+| `GRAFANA_USERNAME` | `.service.env` | Mesmo valor de `GF_SECURITY_ADMIN_USER` |
+| `GRAFANA_PASSWORD` | `.service.env` | Mesmo valor de `GF_SECURITY_ADMIN_PASSWORD` |
+
+---
+
 ## 🚀 Guia Rápido - Primeiros Passos
 
 ### 1. Iniciar o Ambiente
@@ -37,18 +125,18 @@ grafana/
 # No diretório raiz do projeto
 docker compose up -d
 
-# Verificar se os 3 containers estão rodando
+# Verificar se os containers estão rodando
 docker compose ps
 ```
 
 **Containers esperados:**
 - ✅ `db` - PostgreSQL (porta 5432)
 - ✅ `service` - Django backend (porta 8080)
-- ✅ `grafana` - Grafana (porta 3000)
+- ✅ `grafana` - Grafana (porta **5000** no host)
 
 ### 2. Acessar o Grafana
 
-Abra no navegador: **http://localhost:3000**
+Abra no navegador: **http://localhost:5000**
 
 **Credenciais:**
 - Usuário: `admin`

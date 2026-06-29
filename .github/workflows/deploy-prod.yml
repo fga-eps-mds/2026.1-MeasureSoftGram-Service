@@ -51,6 +51,15 @@ jobs:
           cp deploy/docker-compose.prod.yml "$DEPLOY_DIR/docker-compose.prod.yml"
           cp deploy/nginx/default.conf "$DEPLOY_DIR/nginx/default.conf"
 
+      - name: Sincronizar dashboards e provisioning do Grafana
+        run: |
+          mkdir -p "$GRAFANA_PERSIST_DIR/dashboards"
+          mkdir -p "$GRAFANA_PERSIST_DIR/provisioning"
+          cp -r grafana/dashboards/. "$GRAFANA_PERSIST_DIR/dashboards/"
+          cp -r grafana/provisioning/. "$GRAFANA_PERSIST_DIR/provisioning/"
+        env:
+          GRAFANA_PERSIST_DIR: /home/lappis/msgram-grafana
+
       - name: Login no DockerHub
         uses: docker/login-action@v3
         with:

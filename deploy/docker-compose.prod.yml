@@ -82,8 +82,8 @@ services:
     image: grafana/grafana:latest
     volumes:
       - grafana_data:/var/lib/grafana
-      - ../grafana/provisioning:/etc/grafana/provisioning
-      - ../grafana/dashboards:/etc/grafana/dashboards
+      - ${GRAFANA_PERSIST_DIR:-/home/lappis/msgram-grafana}/provisioning:/etc/grafana/provisioning
+      - ${GRAFANA_PERSIST_DIR:-/home/lappis/msgram-grafana}/dashboards:/etc/grafana/dashboards
     env_file:
       # .postgres.env alimenta o datasource do Grafana (mesmo banco do service)
       - ./env-vars/.postgres.env

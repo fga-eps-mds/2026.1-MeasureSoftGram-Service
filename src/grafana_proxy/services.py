@@ -43,7 +43,7 @@ class GrafanaAPIClient:
         params = {'tag': tag, 'type': 'dash-db'}
 
         try:
-            response = requests.get(url, auth=self.auth, params=params, timeout=self.timeout)  # NOSONAR — rede interna Docker
+            response = requests.get(url, auth=self.auth, params=params, timeout=self.timeout)  # NOSONAR
             response.raise_for_status()
             dashboards = response.json()
             logger.info(f'Encontrados {len(dashboards)} dashboards com tag "{tag}"')

@@ -46,10 +46,12 @@ jobs:
       - name: Subir a stack
         run: docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
-      - name: Migrate (idempotente)
-        run: |
-          docker compose -f "$COMPOSE_FILE" exec -T service \
-            python manage.py migrate --noinput
+      # NAO rodar migrate aqui. O proprio boot do container ja migra
+      # (src/start_service.sh roda `manage.py migrate --noinput` antes de
+      # subir o servidor). Um migrate extra por fora corria concorrente com o
+      # do boot, sem lock, e dava race (DuplicateColumn em accounts.0002 ->
+      # "column github_access_token already exists"), reprovando o deploy de
+      # forma intermitente. Migrate fica num lugar so: o entrypoint.
 
       - name: Smoke test
         run: |

@@ -310,3 +310,8 @@ CREATE_FAKE_DATA = os.getenv("CREATE_FAKE_DATA", "False").lower() in (
 
 # Maximum number of days without a new TSQMI calculation before the badge shows "N/A".
 BADGE_STALENESS_DAYS = int(os.getenv("BADGE_STALENESS_DAYS", "30"))
+
+# Username do GitHub da conta de demonstração: ao logar pela 1a vez, recebe
+# o catálogo de organizações/produtos/repositórios mockados (ver
+# accounts/receivers.py e organizations/services.py::seed_demo_data).
+DEMO_GITHUB_USERNAME = os.getenv("DEMO_GITHUB_USERNAME", "msgramteste")

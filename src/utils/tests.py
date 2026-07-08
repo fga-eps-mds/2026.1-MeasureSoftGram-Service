@@ -26,10 +26,12 @@ class APITestCaseExpanded(APITestCase):
         self,
         name='Test Organization',
         description='Test Organization Description',
+        admin=None,
     ):
         return Organization.objects.create(
             name=name,
             description=description,
+            admin=admin,
         )
 
     def get_product(

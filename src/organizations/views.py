@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import mixins, permissions, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -20,6 +21,15 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     )
     serializer_class = OrganizationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            Organization.objects.filter(Q(admin=user) | Q(members=user))
+            .distinct()
+            .order_by('id')
+            .prefetch_related('products')
+        )
 
     def perform_create(self, serializer):
         serializer.save(admin=self.request.user)

@@ -63,7 +63,7 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.assertEqual(data['description'], org.description)
 
     def test_if_existing_organization_is_being_listed(self):
-        org = self.get_organization()
+        org = self.get_organization(admin=self.user)
         url = reverse('organization-list')
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, 200)
@@ -71,7 +71,7 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.compare_organization_data(data[0], org)
 
     def test_update_a_existing_organization(self):
-        org: Organization = self.get_organization()
+        org: Organization = self.get_organization(admin=self.user)
         url = reverse('organization-detail', args=[org.id])
         data = {
             'name': 'Test Organization Updated',
@@ -85,7 +85,7 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.compare_organization_data(data, org)
 
     def test_patch_update_a_existing_organization(self):
-        org: Organization = self.get_organization()
+        org: Organization = self.get_organization(admin=self.user)
         url = reverse('organization-detail', args=[org.id])
         data = {
             'description': 'Test Organization Description Updated',
@@ -98,7 +98,7 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.compare_organization_data(data, org)
 
     def test_delete_a_existing_organization(self):
-        org: Organization = self.get_organization()
+        org: Organization = self.get_organization(admin=self.user)
         url = reverse('organization-detail', args=[org.id])
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, 204)
@@ -106,9 +106,9 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.assertEqual(qs, False)
 
     def test_list_all_existing_organizations(self):
-        self.get_organization(name='Test Organization 1')
-        self.get_organization(name='Test Organization 2')
-        self.get_organization(name='Test Organization 3')
+        self.get_organization(name='Test Organization 1', admin=self.user)
+        self.get_organization(name='Test Organization 2', admin=self.user)
+        self.get_organization(name='Test Organization 3', admin=self.user)
 
         url = reverse('organization-list')
         response = self.client.get(url, format='json')
@@ -124,7 +124,7 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.assertEqual(data['results'][2]['name'], 'Test Organization 3')
 
     def test_if_an_organizations_product_urls_list_is_returned(self):
-        org: Organization = self.get_organization()
+        org: Organization = self.get_organization(admin=self.user)
         self.get_product(org)
 
         url = reverse('organization-detail', args=[org.id])
@@ -149,7 +149,7 @@ class OrganizationsViewsTestCase(APITestCaseExpanded):
         self.assertEqual(data['description'], 'Test Product Description')
 
     def test_if_create_product_action_url_is_working(self):
-        org: Organization = self.get_organization()
+        org: Organization = self.get_organization(admin=self.user)
         self.get_product(org)
 
         url = reverse('organization-detail', args=[org.id])

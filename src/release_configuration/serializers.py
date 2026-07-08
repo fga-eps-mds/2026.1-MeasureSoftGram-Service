@@ -47,11 +47,16 @@ class ReleaseConfigurationSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class MetricSerializer(serializers.Serializer):
+    key = serializers.CharField()
+
+
 class MeasureSerializer(serializers.Serializer):
     key = serializers.CharField()
     weight = serializers.IntegerField()
     min_threshold = serializers.IntegerField()
     max_threshold = serializers.IntegerField()
+    metrics = serializers.ListField(child=MetricSerializer())
 
 
 class SubCharacteristicSerializer(serializers.Serializer):

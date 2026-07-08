@@ -81,7 +81,16 @@ def force_the_sum_to_equal_100(entities_data: dict):
 def get_measures(subcharacteristic: SupportedSubCharacteristic):
     measures = subcharacteristic.measures.all()
     weight = 100 // measures.count()
-    data = [{'key': measure.key, 'weight': weight} for measure in measures]
+    data = [
+        {
+            'key': measure.key,
+            'weight': weight,
+            'metrics': [
+                {'key': metric.key} for metric in measure.metrics.all()
+            ],
+        }
+        for measure in measures
+    ]
     data = force_the_sum_to_equal_100(data)
     return data
 

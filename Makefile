@@ -2,7 +2,7 @@ COMPOSE = docker compose
 
 .PHONY: help up down restart build rebuild logs ps clear \
         migrate migrations shell superuser \
-        test test-smoke test-cov \
+        test test-smoke test-cov lint format migrations-check check \
         bash
 
 help:
@@ -21,6 +21,10 @@ help:
 	@echo "  test         - pytest verbose"
 	@echo "  test-smoke   - smokes do math_model"
 	@echo "  test-cov     - pytest com coverage"
+	@echo "  lint         - flake8 src/ (mesma checagem do CI)"
+	@echo "  format       - black + isort no src/ (opt-in, nao roda no CI)"
+	@echo "  migrations-check - detecta model sem migration (mesma checagem do CI)"
+	@echo "  check        - lint + test + migrations-check (espelha o CI local)"
 	@echo "  bash         - bash dentro do service"
 	@echo "  clear        - down -v --remove-orphans (apaga volumes)"
 
@@ -82,3 +86,24 @@ test-cov:
 	$(COMPOSE) run --rm \
 	    -e DJANGO_SETTINGS_MODULE=config.settings.test \
 	    -w /src service /app/.venv/bin/pytest --cov --cov-report=term-missing
+
+# flake8 nao esta nas deps do projeto; o CI instala via `uv tool install`.
+# uvx roda a mesma ferramenta de forma efemera, sem sujar o ambiente.
+lint:
+	uvx flake8 src/
+
+# black + isort ainda nao sao deps do projeto; rodam via uvx. Opt-in: o CI
+# nao exige formatacao, entao este target nao reformata em massa sozinho.
+format:
+	uvx black src/
+	uvx isort src/
+
+# Mesma checagem que o job de testes do CI faz (makemigrations --check),
+# que hoje so falha depois de abrir o PR.
+migrations-check:
+	$(COMPOSE) run --rm \
+	    -e DJANGO_SETTINGS_MODULE=config.settings.test \
+	    -w /src service /app/.venv/bin/python manage.py makemigrations --check --dry-run
+
+# Espelha localmente os gates do CI: flake8 + suite de testes + migrations.
+check: lint test migrations-check

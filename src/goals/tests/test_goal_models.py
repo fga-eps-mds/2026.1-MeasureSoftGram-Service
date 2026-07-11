@@ -62,3 +62,42 @@ class GoalModelTestCase(APITestCaseExpanded):
         )
         self.assertIsNotNone(goal.id)
         self.assertEqual(Goal.objects.filter(id=goal.id).count(), 1)
+
+
+class GoalImmutabilityTestCase(APITestCaseExpanded):
+    def setUp(self):
+        self.user = self.get_or_create_test_user()
+        self.org = self.get_organization(add_user=False)
+        self.product = self.get_product(self.org)
+
+    def create_goal(self, data):
+        return Goal.objects.create(
+            created_at=date.today(),
+            created_by=self.user,
+            product=self.product,
+            data=data,
+        )
+
+    def test_queryset_update_raises(self):
+        goal = self.create_goal({"reliability": 53})
+        with self.assertRaises(ValueError):
+            Goal.objects.filter(pk=goal.pk).update(data={"reliability": 99})
+
+    def test_reverse_manager_update_raises(self):
+        goal = self.create_goal({"reliability": 53})
+        with self.assertRaises(ValueError):
+            self.product.goals.filter(pk=goal.pk).update(
+                data={"reliability": 99}
+            )
+
+    def test_bulk_update_raises(self):
+        goal = self.create_goal({"reliability": 53})
+        goal.data = {"reliability": 99}
+        with self.assertRaises(ValueError):
+            Goal.objects.bulk_update([goal], ["data"])
+
+    def test_reads_still_work(self):
+        goal = self.create_goal({"reliability": 53})
+        self.assertEqual(Goal.objects.filter(pk=goal.pk).first(), goal)
+        self.assertEqual(Goal.objects.all().count(), 1)
+        self.assertEqual(self.product.goals.count(), 1)

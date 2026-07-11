@@ -8,6 +8,29 @@ from subcharacteristics.models import SupportedSubCharacteristic
 from utils.exceptions import InvalidReleaseConfigurationException
 
 
+class ImmutableQuerySet(models.QuerySet):
+    """
+    QuerySet que garante a imutabilidade de ReleaseConfiguration mesmo pelos
+    vetores que contornam o `save()` customizado do model.
+
+    `QuerySet.update()` e `QuerySet.bulk_update()` vão direto ao SQL, não
+    instanciam o model nem chamam `save()`, então bypassavam a guarda de
+    imutabilidade. Aqui ambos levantam `ValueError` com a mesma semântica do
+    `save()`. `delete()` NÃO é bloqueado: o Product tem on_delete=CASCADE para
+    release_configuration e deletes em cascata são legítimos.
+    """
+
+    def update(self, *args, **kwargs):
+        raise ValueError(
+            "It's not allowed to edit a release-configuration"
+        )
+
+    def bulk_update(self, *args, **kwargs):
+        raise ValueError(
+            "It's not allowed to edit a release-configuration"
+        )
+
+
 class ReleaseConfiguration(models.Model):
     """
     Classe que abstrai uma pré-configuração do modelo.
@@ -22,6 +45,8 @@ class ReleaseConfiguration(models.Model):
         # querysets os registros mais recentes vem
         # primeiro (qs.first() == mais recente)
         ordering = ["-created_at"]
+
+    objects = ImmutableQuerySet.as_manager()
 
     created_at = models.DateTimeField(default=timezone.now)
     name = models.CharField(max_length=128, null=True, blank=True)

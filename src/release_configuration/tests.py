@@ -104,3 +104,32 @@ class TestConfigEnpoints(APITestCaseExpanded):
         )
         self.assertEqual(configs_resp.status_code, status.HTTP_200_OK)
         self.assertTrue(configs_resp.json()["created_config"])
+
+
+class TestReleaseConfigurationImmutability(APITestCaseExpanded):
+    def setUp(self):
+        self.user = self.get_or_create_test_user()
+        self.org = self.get_organization()
+        self.prod = self.get_product(self.org)
+        # Product.save() cria automaticamente uma release-config default
+        self.config = self.prod.release_configuration.first()
+
+    def test_that_queryset_update_is_prohibited(self):
+        self.assertIsNotNone(self.config)
+        with self.assertRaises(ValueError):
+            ReleaseConfiguration.objects.filter(pk=self.config.pk).update(
+                data={"hacked": True}
+            )
+
+    def test_that_reverse_manager_update_is_prohibited(self):
+        with self.assertRaises(ValueError):
+            self.prod.release_configuration.filter(
+                pk=self.config.pk
+            ).update(data={"hacked": True})
+
+    def test_that_bulk_update_is_prohibited(self):
+        self.config.data = {"hacked": True}
+        with self.assertRaises(ValueError):
+            ReleaseConfiguration.objects.bulk_update(
+                [self.config], ["data"]
+            )

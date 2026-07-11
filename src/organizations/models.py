@@ -82,8 +82,8 @@ class Product(models.Model):
 
         ReleaseConfiguration.objects.get_or_create(
             name="Default pre-config",
-            data=staticfiles.DEFAULT_PRE_CONFIG,
             product=self,
+            defaults={"data": staticfiles.DEFAULT_PRE_CONFIG},
         )
 
 

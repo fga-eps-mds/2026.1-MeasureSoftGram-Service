@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from django_apscheduler.jobstores import DjangoJobStore, register_events
+from django.conf import settings
 from django.db import connection
 from django.utils import timezone
 
@@ -148,6 +149,29 @@ def acquire_scheduler_lock():
         return True
 
 
+def build_release_cron_trigger():
+    """Cria o CronTrigger da meia-noite com timezone explicita.
+
+    Usa settings.TIME_ZONE (America/Sao_Paulo) em vez da tz do OS do
+    container, para o gatilho do cron bater com a janela do dia que
+    get_releases_and_create_results computa via timezone.now() do Django.
+    """
+    return CronTrigger(
+        hour=0,
+        minute=0,
+        timezone=settings.TIME_ZONE,
+    )
+
+
+def build_release_scheduler():
+    """Cria o BackgroundScheduler com timezone explicita (settings.TIME_ZONE).
+
+    Evita depender da tz do OS do container, mantendo o scheduler alinhado
+    com o CronTrigger e com a janela de dados do job.
+    """
+    return BackgroundScheduler(timezone=settings.TIME_ZONE)
+
+
 def check_the_need_to_calculate_releases():
     if not acquire_scheduler_lock():
         print(
@@ -156,15 +180,12 @@ def check_the_need_to_calculate_releases():
         )
         return
 
-    scheduler = BackgroundScheduler()
+    scheduler = build_release_scheduler()
     scheduler.add_jobstore(DjangoJobStore(), "default")
 
     scheduler.add_job(
         get_releases_and_create_results,
-        trigger=CronTrigger(
-            hour=00,
-            minute=00,
-        ),
+        trigger=build_release_cron_trigger(),
         name="get_releases_and_create_results",
         jobstore="default",
         replace_existing=True,

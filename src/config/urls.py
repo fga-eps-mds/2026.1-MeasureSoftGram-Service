@@ -7,6 +7,7 @@ from drf_yasg import openapi
 from rest_framework import permissions
 
 from accounts import urls as accounts_urls
+from config.health import health_check
 from characteristics.views import (
     BalanceMatrixViewSet,
     LatestCalculatedCharacteristicBadgeViewSet,
@@ -79,6 +80,7 @@ REPO_PREFIX = (
 )
 
 urlpatterns = [
+    path("health/", health_check, name="health-check"),
     path("admin/", admin.site.urls),
     path("api/v1/", include(main_router.urls)),
     path("api/v1/", include(org_router.nested_router.urls)),

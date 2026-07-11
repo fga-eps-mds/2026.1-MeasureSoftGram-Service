@@ -37,6 +37,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      # start_period cobre migrations + load_initial_data + collectstatic
+      # que rodam antes do gunicorn subir (start_service.sh).
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
     develop:
       watch:

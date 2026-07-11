@@ -5,6 +5,25 @@ from django.db import models
 from django.utils import timezone
 
 
+class ImmutableQuerySet(models.QuerySet):
+    """
+    QuerySet que garante a imutabilidade de Goal mesmo pelos vetores que
+    contornam o `save()` customizado do model.
+
+    `QuerySet.update()` e `QuerySet.bulk_update()` vão direto ao SQL, não
+    instanciam o model nem chamam `save()`, então bypassavam a guarda de
+    imutabilidade. Aqui ambos levantam `ValueError` com a mesma semântica do
+    `save()`. `delete()` NÃO é bloqueado: o Product tem on_delete=CASCADE para
+    goals e deletes em cascata são legítimos.
+    """
+
+    def update(self, *args, **kwargs):
+        raise ValueError("It's not allowed to update a goal")
+
+    def bulk_update(self, *args, **kwargs):
+        raise ValueError("It's not allowed to update a goal")
+
+
 class Goal(models.Model):
     """
     Tabela que armazena os objetivos de qualidade
@@ -13,6 +32,8 @@ class Goal(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+
+    objects = ImmutableQuerySet.as_manager()
 
     created_at = models.DateTimeField(default=timezone.now)
     data = models.JSONField()

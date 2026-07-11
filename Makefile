@@ -1,12 +1,15 @@
 COMPOSE = docker compose
 
-.PHONY: help up down restart build rebuild logs ps clear \
+.PHONY: help setup dev seed up down restart build rebuild logs ps clear \
         migrate migrations shell superuser \
         test test-smoke test-cov lint format migrations-check check \
         bash
 
 help:
 	@echo "Targets disponiveis:"
+	@echo "  setup        - do zero a stack de pe: env-vars + build + up + espera health"
+	@echo "  dev          - sobe a stack com hot-reload (docker compose up --watch)"
+	@echo "  seed         - popula dados (load_initial_data + seed_grafana)"
 	@echo "  up           - sobe a stack em background"
 	@echo "  down         - derruba a stack"
 	@echo "  restart      - reinicia todos os services"
@@ -27,6 +30,31 @@ help:
 	@echo "  check        - lint + test + migrations-check (espelha o CI local)"
 	@echo "  bash         - bash dentro do service"
 	@echo "  clear        - down -v --remove-orphans (apaga volumes)"
+
+# --- Onboarding -------------------------------------------------------------
+
+# Do zero a stack de pe num comando: copia os env-vars (se ainda nao existirem),
+# builda as imagens, sobe e espera o container service ficar healthy (usa o
+# healthcheck do compose). E idempotente: nao sobrescreve env-vars ja ajustados.
+setup:
+	@test -d env-vars || cp -R env-vars-example env-vars
+	$(COMPOSE) build
+	$(COMPOSE) up -d
+	@echo ">>> aguardando o service ficar healthy..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' service 2>/dev/null)" = "healthy" ]; do \
+	    sleep 2; \
+	done
+	@echo ">>> stack de pe. API em http://localhost:8080/  Grafana em http://localhost:5000/"
+
+# Sobe com hot-reload: sincroniza src/ e refaz deps quando pyproject muda
+# (usa o bloco develop.watch do docker-compose.yml).
+dev:
+	$(COMPOSE) up --watch
+
+# Popula as entidades suportadas e provisiona os dashboards do Grafana.
+seed:
+	$(COMPOSE) exec service python manage.py load_initial_data
+	$(COMPOSE) exec service python manage.py seed_grafana
 
 # --- Lifecycle --------------------------------------------------------------
 
@@ -56,16 +84,16 @@ clear:
 # --- Django -----------------------------------------------------------------
 
 migrate:
-	$(COMPOSE) exec service python src/manage.py migrate
+	$(COMPOSE) exec service python manage.py migrate
 
 migrations:
-	$(COMPOSE) exec service python src/manage.py makemigrations
+	$(COMPOSE) exec service python manage.py makemigrations
 
 shell:
-	$(COMPOSE) exec service python src/manage.py shell
+	$(COMPOSE) exec service python manage.py shell
 
 superuser:
-	$(COMPOSE) exec service python src/manage.py createsuperuser
+	$(COMPOSE) exec service python manage.py createsuperuser
 
 bash:
 	$(COMPOSE) exec service bash

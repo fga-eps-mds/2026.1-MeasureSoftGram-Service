@@ -1,5 +1,6 @@
 from typing import Dict, Iterable
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -26,14 +27,23 @@ class Goal(models.Model):
     )
 
     @staticmethod
-    def validate_goal(goal_dict: Dict[str, int]):
+    def validate_goal(goal_dict: Dict[str, int]) -> bool:
+        if not isinstance(goal_dict, dict) or not goal_dict:
+            return False
+
+        for value in goal_dict.values():
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                return False
+
         return True
 
     def save(self, *args, **kwargs):
         if self.id:
             raise ValueError("It's not allowed to update a goal")
 
-        self.validate_goal(self.data)
+        if not self.validate_goal(self.data):
+            raise ValidationError("The goal data is invalid")
+
         return super().save(*args, **kwargs)
 
 

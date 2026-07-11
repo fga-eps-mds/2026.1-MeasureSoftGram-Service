@@ -41,6 +41,32 @@ Edite os valores que precisar (em desenvolvimento, os defaults do `env-vars-exam
 
 > **Nota:** em semestres anteriores o `docker-compose` lia `env-vars-example/` diretamente. A partir desta release a separação `example/` × `env-vars/` é obrigatória — o caminho `./env-vars/.postgres.env` está fixado em `docker-compose.yml`.
 
+> Atalho: `make env` faz o `cp -R env-vars-example env-vars` (e `make setup` já copia antes de subir). Mantemos a pasta `env-vars/` em vez de um único `.env` na raiz porque os caminhos `./env-vars/.service.env` e `./env-vars/.postgres.env` estão fixados no `docker-compose.yml`.
+
+### 1.1. Configurar o GitHub OAuth App (login com GitHub em dev)
+
+Os defaults de `GITHUB_CLIENT_ID` / `GITHUB_SECRET` no `env-vars-example/.service.env` são placeholders (`CL13NT1D` / `S3CR3T`): a API sobe, mas o **login real com GitHub** só funciona com um OAuth App próprio. Para habilitá-lo em desenvolvimento:
+
+1. Acesse **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App** (<https://github.com/settings/developers>).
+2. Preencha:
+   - **Application name**: livre (ex: `MeasureSoftGram (dev)`).
+   - **Homepage URL**: `http://127.0.0.1:3000`
+   - **Authorization callback URL**: `http://127.0.0.1:3000` — precisa **bater com o `LOGIN_REDIRECT_URL`**. O backend usa esse valor como `callback_url` na troca do `code` (`src/accounts/views.py`); em dev o callback é o próprio frontend, que recebe o `?code=` do GitHub e o repassa ao backend.
+3. Clique em **Register application** e gere um **client secret**.
+4. Cole os valores em `env-vars/.service.env`:
+
+   ```env
+   GITHUB_CLIENT_ID=<client id do OAuth App>
+   GITHUB_SECRET=<client secret gerado>
+   LOGIN_REDIRECT_URL=http://127.0.0.1:3000
+   ```
+
+5. Suba ou reinicie o service (`make up` / `docker compose up`).
+
+Os **scopes** (`read:user`, `user:email`, `read:project`, `read:org`, `repo`) já estão definidos no backend (`SOCIALACCOUNT_PROVIDERS` em `config/settings/base.py`); não precisam ser configurados no OAuth App.
+
+> **Produção:** use um OAuth App separado, com a *Authorization callback URL* apontando pro domínio real (ex: `http://msgram.lappis.rocks`) e as credenciais no `env-vars/.service.env` do servidor. Os placeholders de PROD estão comentados no `env-vars-example/.service.env`.
+
 ### 2. Suba os containers
 
 ```bash

@@ -1,12 +1,13 @@
 COMPOSE = docker compose
 
-.PHONY: help setup dev seed up down restart build rebuild logs ps clear \
+.PHONY: help env setup dev seed up down restart build rebuild logs ps clear \
         migrate migrations shell superuser \
         test test-smoke test-cov lint format migrations-check check \
         bash
 
 help:
 	@echo "Targets disponiveis:"
+	@echo "  env          - copia env-vars-example -> env-vars (nao sobrescreve)"
 	@echo "  setup        - do zero a stack de pe: env-vars + build + up + espera health"
 	@echo "  dev          - sobe a stack com hot-reload (docker compose up --watch)"
 	@echo "  seed         - popula dados (load_initial_data + seed_grafana)"
@@ -32,6 +33,12 @@ help:
 	@echo "  clear        - down -v --remove-orphans (apaga volumes)"
 
 # --- Onboarding -------------------------------------------------------------
+
+# Copia os templates de ambiente. Idempotente: nao sobrescreve env-vars ja
+# ajustados (as credenciais reais ficam so em env-vars/, que e gitignored).
+env:
+	@test -d env-vars || cp -R env-vars-example env-vars
+	@echo ">>> env-vars pronto (ajuste GITHUB_CLIENT_ID/SECRET pro login GitHub; ver README)."
 
 # Do zero a stack de pe num comando: copia os env-vars (se ainda nao existirem),
 # builda as imagens, sobe e espera o container service ficar healthy (usa o

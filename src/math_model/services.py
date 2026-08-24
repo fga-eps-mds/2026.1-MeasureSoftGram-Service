@@ -8,6 +8,7 @@ from resources import (calculate_characteristics, calculate_measures,
 from characteristics.models import (CalculatedCharacteristic,
                                     SupportedCharacteristic)
 from characteristics.serializers import CalculatedCharacteristicSerializer
+from math_model.utils import RUNTIME_MEASURE_KEYS
 from measures.models import CalculatedMeasure, SupportedMeasure
 from measures.serializers import CalculatedMeasureSerializer
 from metrics.models import CollectedMetric, SupportedMetric
@@ -110,8 +111,15 @@ class MathModelServices:
         """Calcula medidas a partir das métricas em memória."""
         metric_index = self._index_metrics_by_key(collected_metrics)
 
-        qs = SupportedMeasure.objects.filter(key__in=measure_keys).prefetch_related(
-            "metrics"
+        # Runtime measures ficam de fora: o msgram-core 1.5.x as valida com
+        # CompareRunTimeMeasureSchema, que exige o payload de duas releases
+        # com dados de APM. O Service ainda não tem coletor de APM nem noção
+        # de comparar releases, então mandá-las aqui só quebraria o cálculo
+        # inteiro. Reavaliar quando o coletor existir (issue #56).
+        qs = (
+            SupportedMeasure.objects.filter(key__in=measure_keys)
+            .exclude(key__in=RUNTIME_MEASURE_KEYS)
+            .prefetch_related("metrics")
         )
 
         core_params = {"measures": []}

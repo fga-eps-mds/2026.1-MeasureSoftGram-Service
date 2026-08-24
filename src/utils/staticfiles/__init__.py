@@ -2,4 +2,5 @@ from .default_balance_matrix import DEFAULT_BALANCE_MATRIX
 from .default_pre_config import DEFAULT_PRE_CONFIG
 from .github_available_metrics import GITHUB_AVAILABLE_METRICS
 from .mocked_measure_history import MOCKED_MEASURE_HISTORY
+from .runtime_available_metrics import RUNTIME_AVAILABLE_METRICS
 from .sonarqube_available_metrics import SONARQUBE_AVAILABLE_METRICS

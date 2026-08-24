@@ -156,6 +156,7 @@ class Command(BaseCommand):
     def create_supported_metrics(self):
         self.create_sonarqube_supported_metrics()
         self.create_github_supported_metrics()
+        self.create_runtime_supported_metrics()
 
     def create_sonarqube_supported_metrics(self):
         data = staticfiles.SONARQUBE_AVAILABLE_METRICS
@@ -183,6 +184,20 @@ class Command(BaseCommand):
         ]
 
         for metric in github_metrics:
+            with contextlib.suppress(IntegrityError):
+                metric.save()
+
+    def create_runtime_supported_metrics(self):
+        runtime_metrics = [
+            SupportedMetric(
+                key=metric["key"],
+                name=metric["name"],
+                metric_type=metric["metric_type"],
+            )
+            for metric in staticfiles.RUNTIME_AVAILABLE_METRICS
+        ]
+
+        for metric in runtime_metrics:
             with contextlib.suppress(IntegrityError):
                 metric.save()
 

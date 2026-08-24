@@ -145,8 +145,10 @@ class MathModelServicesTest(APITestCaseExpanded):
         assert len(instances) == 8
         assert all(isinstance(i, CalculatedMeasure) for i in instances)
         assert all(i.pk is None for i in instances)
-        # Dict tem as mesmas keys, valores são floats
-        assert set(values.keys()) == set(measure_keys)
+        # Dict tem as mesmas keys (menos as runtime measures, que ficam de
+        # fora enquanto não houver coletor de APM), valores são floats
+        expected_keys = set(measure_keys) - set(utils.RUNTIME_MEASURE_KEYS)
+        assert set(values.keys()) == expected_keys
         assert all(isinstance(v, float) for v in values.values())
 
     def test_build_calculated_subcharacteristics_uses_in_memory_values(self):

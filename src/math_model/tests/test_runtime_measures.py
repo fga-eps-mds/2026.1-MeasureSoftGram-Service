@@ -129,6 +129,14 @@ class DeriveRuntimeMeasureKeysTest(APITestCaseExpanded):
     entra sozinha."""
 
     def test_matches_the_runtime_measures_of_the_current_core(self):
+        """Tripwire proposital: crava as chaves do core 1.5.x.
+
+        A derivacao acompanha o core sozinha, mas se uma metrica for renomeada
+        la a intersecao vira vazia e o filtro degenera em no-op silencioso.
+        Este teste quebra nesse caso. Falhou depois de subir o core? Confira se
+        RUNTIME_AVAILABLE_METRICS ainda casa com o catalogo dele antes de so
+        atualizar a lista abaixo.
+        """
         assert set(RUNTIME_MEASURE_KEYS) == {
             "response_time",
             "cpu_utilization",

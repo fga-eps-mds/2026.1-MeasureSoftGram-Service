@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
@@ -19,6 +20,8 @@ from subcharacteristics.serializers import \
     CalculatedSubCharacteristicSerializer
 from tsqmi.models import TSQMI
 from tsqmi.serializers import TSQMISerializer
+
+logger = logging.getLogger(__name__)
 
 # Métricas multi-valor (lista de floats por arquivo) — espelha
 # SupportedMetric.get_latest_metric_value em metrics/models.py:46.
@@ -116,6 +119,13 @@ class MathModelServices:
         # com dados de APM. O Service ainda não tem coletor de APM nem noção
         # de comparar releases, então mandá-las aqui só quebraria o cálculo
         # inteiro. Reavaliar quando o coletor existir (issue #56).
+        skipped = set(measure_keys) & set(RUNTIME_MEASURE_KEYS)
+        if skipped:
+            logger.warning(
+                "Runtime measures ignoradas no calculo (sem coletor de APM): %s",
+                ", ".join(sorted(skipped)),
+            )
+
         qs = (
             SupportedMeasure.objects.filter(key__in=measure_keys)
             .exclude(key__in=RUNTIME_MEASURE_KEYS)

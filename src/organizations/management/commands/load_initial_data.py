@@ -18,6 +18,7 @@ import utils
 from characteristics.models import (CalculatedCharacteristic,
                                     SupportedCharacteristic)
 from goals.serializers import GoalSerializer
+from math_model.utils import RUNTIME_MEASURE_KEYS
 from measures.models import CalculatedMeasure, SupportedMeasure
 from metrics.models import CollectedMetric, SupportedMetric
 from organizations.models import Organization, Product, Repository
@@ -277,7 +278,10 @@ class Command(BaseCommand):
         )
 
     def create_fake_calculated_measures(self, repository):
-        qs = SupportedMeasure.objects.all()
+        # Runtime measures nao entram no fake data: elas nunca sao calculadas
+        # de verdade (ver issue #56), entao inventar historico para elas
+        # produziria serie bonita no dashboard sem contrapartida em producao.
+        qs = SupportedMeasure.objects.exclude(key__in=RUNTIME_MEASURE_KEYS)
         current_entity = [None]
         state = [random.uniform(0.5, 0.85)]
 

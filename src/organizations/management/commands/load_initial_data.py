@@ -18,6 +18,7 @@ import utils
 from characteristics.models import (CalculatedCharacteristic,
                                     SupportedCharacteristic)
 from goals.serializers import GoalSerializer
+from math_model.utils import RUNTIME_MEASURE_KEYS
 from measures.models import CalculatedMeasure, SupportedMeasure
 from metrics.models import CollectedMetric, SupportedMetric
 from organizations.models import Organization, Product, Repository
@@ -156,6 +157,7 @@ class Command(BaseCommand):
     def create_supported_metrics(self):
         self.create_sonarqube_supported_metrics()
         self.create_github_supported_metrics()
+        self.create_runtime_supported_metrics()
 
     def create_sonarqube_supported_metrics(self):
         data = staticfiles.SONARQUBE_AVAILABLE_METRICS
@@ -183,6 +185,20 @@ class Command(BaseCommand):
         ]
 
         for metric in github_metrics:
+            with contextlib.suppress(IntegrityError):
+                metric.save()
+
+    def create_runtime_supported_metrics(self):
+        runtime_metrics = [
+            SupportedMetric(
+                key=metric["key"],
+                name=metric["name"],
+                metric_type=metric["metric_type"],
+            )
+            for metric in staticfiles.RUNTIME_AVAILABLE_METRICS
+        ]
+
+        for metric in runtime_metrics:
             with contextlib.suppress(IntegrityError):
                 metric.save()
 
@@ -262,7 +278,10 @@ class Command(BaseCommand):
         )
 
     def create_fake_calculated_measures(self, repository):
-        qs = SupportedMeasure.objects.all()
+        # Runtime measures nao entram no fake data: elas nunca sao calculadas
+        # de verdade (ver issue #56), entao inventar historico para elas
+        # produziria serie bonita no dashboard sem contrapartida em producao.
+        qs = SupportedMeasure.objects.exclude(key__in=RUNTIME_MEASURE_KEYS)
         current_entity = [None]
         state = [random.uniform(0.5, 0.85)]
 
